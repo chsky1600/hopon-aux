@@ -1,0 +1,5 @@
+Flask
+spotipy
+pymongo
+qrcode
+python-dotenv

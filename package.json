@@ -1,0 +1,20 @@
+{
+  "name": "hopon-aux",
+  "version": "1.0.0",
+  "description": "# Collaborative Party Playlist",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i ./static/src/css/input.css -o ./static/dist/css/styles.css --minify",
+    "watch:css": "tailwindcss -i ./static/src/css/input.css -o ./static/dist/css/styles.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "autoprefixer": "^10.4.20",
+    "flask": "^0.2.10",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14"
+  }
+}
