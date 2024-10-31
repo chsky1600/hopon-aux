@@ -1,5 +1,5 @@
 Flask
 spotipy
 pymongo
-qrcode
+qrcode[pil]
 python-dotenv
