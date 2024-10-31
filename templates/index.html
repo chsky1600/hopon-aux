@@ -1,14 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}">
-
+  <link rel="stylesheet" href="{{ url_for('static', filename='src/css/main.css') }}">
 </head>
-<body>
-    <div class="container mx-auto px-4">
-        <h2 class="text-2xl font-bold mb-4">Welcome to Hopon! Scan Below to start 🎵</h2>
-        <img src="{{ url_for('qr_code') }}" alt="QR Code">
-      </div>
+<body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+  
+   <!-- Full-width Welcome Banner with Glow -->
+  <header class="w-full text-center mb-12 px-4">
+    <h1 class="text-8xl font-extrabold text-white uppercase glow-text">Welcome to Hopon!</h1>
+  </header>
+  
+  <!-- Floating Notes Container -->
+  <div class="floating-notes absolute inset-0 pointer-events-none">
+    <span class="note-animation text-4xl text-softPurple absolute top-10 left-16">🎶</span>
+    <span class="note-animation text-5xl text-softPurple absolute top-1/4 right-12">🎵</span>
+    <span class="note-animation text-3xl text-softPurple absolute bottom-20 left-10">🎶</span>
+    <span class="note-animation text-4xl text-softPurple absolute bottom-32 right-20">🎵</span>
+  </div>
+
+  <!-- Main Content Container -->
+  <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[36rem] backdrop-blur-lg qr-container">
+    <p class="text-2xl font-semibold text-white mb-8">Scan the QR Code Below to get Started! 🎶</p>
+    <div class="flex flex-col items-center">
+      <img src="{{ url_for('qr_code') }}" alt="QR Code" class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform">
+    </div>
+  </div>
 </body>
+
 </html>
