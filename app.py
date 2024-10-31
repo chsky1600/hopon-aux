@@ -1,8 +1,18 @@
-from flask import Flask, render_template, url_for, send_file
+from flask import Flask, render_template, url_for, send_file, request, redirect, flash
 import qrcode
 import io
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
+
+client_id = os.getenv('SPOTIFY_CLIENT_ID')
+client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
+
+sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=client_id, client_secret=client_secret))
 
 @app.route('/')
 def index():
@@ -35,8 +45,16 @@ def qr_code():
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
-    # Implementation of add_song route
-    print("Test Mark")
+    if request.method == 'POST':
+        song_query = request.form.get('song_query')
+        if song_query:
+            results = sp.search(q=song_query, type='track', limit=10)
+            tracks = results['tracks']['items']
+            return render_template('add_song.html', tracks=tracks)
+        else:
+            flash('Please enter a song query')
+            return redirect(url_for('add_song'))
+    return render_template('add_song.html')
 
 if __name__ == '__main__':
     app.run(debug=False, port=5002)
