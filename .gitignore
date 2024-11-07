@@ -1,3 +1,5 @@
 venv/
 node_modules/
 .env
+.cache
+.spotifycache

@@ -23,7 +23,11 @@
   <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[36rem] backdrop-blur-lg qr-container">
     <p class="text-2xl font-semibold text-white mb-8">Scan the QR Code Below to get Started! 🎶</p>
     <div class="flex flex-col items-center">
-      <img src="{{ url_for('qr_code') }}" alt="QR Code" class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform">
+        <a href="{{ url_for('login') }}" class="mt-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+            Login with Spotify
+        </a>
+
+      <!-- <img src="{{ url_for('qr_code') }}" alt="QR Code" class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform"> -->
     </div>
   </div>
 </body>

@@ -1,0 +1,60 @@
+# app/__init__.py
+
+from flask import Flask
+from flask_session import Session
+from dotenv import load_dotenv
+import os
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+import secrets
+
+load_dotenv()
+
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
+
+#TODO: session config token to be server-side in prod 
+app.secret_key = secrets.token_hex(16)
+
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
+
+# Spotify credentials and auth
+client_id = os.getenv('SPOTIFY_CLIENT_ID')
+client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
+redirect_uri = 'http://127.0.0.1:5002/callback'  # Ensure this matches your Spotify app settings
+scope = 'user-modify-playback-state'
+
+sp_oauth = SpotifyOAuth(
+    client_id=client_id,
+    client_secret=client_secret,
+    redirect_uri=redirect_uri,
+    scope=scope,
+    cache_path='.spotifycache'
+)
+
+# Helper functions
+def get_spotify_client():
+    from flask import session
+    token_info = session.get('token_info', None)
+    if not token_info:
+        return None
+
+    # Check if token is expired and refresh if necessary
+    if sp_oauth.is_token_expired(token_info):
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+        session['token_info'] = token_info
+
+    access_token = token_info['access_token']
+    sp = spotipy.Spotify(auth=access_token)
+    return sp
+
+def get_active_device(sp_host):
+    devices = sp_host.devices()
+    for device in devices['devices']:
+        if device['is_active']:
+            return device['id']
+    return None
+
+# Import routes
+from app import routes
+import secrets
