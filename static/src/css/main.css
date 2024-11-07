@@ -1,0 +1,62 @@
+/* static/src/css/main.css */
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Glow Effect for Header */
+.glow-text {
+    text-shadow: 0px 0px 10px rgba(146, 144, 195, 0.7), 
+                 0px 0px 20px rgba(146, 144, 195, 0.5), 
+                 0px 0px 30px rgba(146, 144, 195, 0.3);
+}
+
+.qr-container {
+    animation: pulse-shadow 2s infinite;
+}
+
+/* Keyframes for pulsing shadow */
+@keyframes pulse-shadow {
+    0%, 100% {
+        box-shadow: 0px 0px 20px rgba(146, 144, 195, 0.3);
+    }
+    50% {
+        box-shadow: 0px 0px 30px rgba(146, 144, 195, 0.5);
+    }
+}
+
+.note-animation {
+    animation: float 8s ease-in-out infinite;
+    opacity: 0.6;
+}
+
+/* Keyframes for more dynamic floating effect */
+@keyframes float {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(-15px, 15px); }
+    50% { transform: translate(15px, -20px); }
+    75% { transform: translate(-10px, 10px); }
+    100% { transform: translate(0, 0); }
+}
+
+/* Additional animation variations for more dynamic effect */
+.note-animation:nth-child(1) {
+    animation-duration: 9s;
+    top: 15%;
+    left: 10%;
+}
+.note-animation:nth-child(2) {
+    animation-duration: 7s;
+    top: 30%;
+    right: 15%;
+}
+.note-animation:nth-child(3) {
+    animation-duration: 10s;
+    bottom: 20%;
+    left: 20%;
+}
+.note-animation:nth-child(4) {
+    animation-duration: 8s;
+    bottom: 35%;
+    right: 25%;
+}
