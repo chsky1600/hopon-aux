@@ -15,6 +15,19 @@
           </button>
         </form>
 
+        <!-- Display flashed messages -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="mt-4">
+              {% for message in messages %}
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                  <span class="block sm:inline">{{ message }}</span>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
         {% if tracks %}
         <div class="track-list mt-6">
           <h3 class="text-2xl font-bold mb-4">Search Results:</h3>
@@ -28,6 +41,7 @@
               <!-- Form to add track to queue -->
               <form action="{{ url_for('queue_song') }}" method="POST" class="inline-block ml-4">
                 <input type="hidden" name="track_uri" value="{{ track.uri }}">
+                <input type="hidden" name="song_query" value="{{ song_query }}">
                 <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
                   Add to Queue
                 </button>

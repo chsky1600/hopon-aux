@@ -62,19 +62,19 @@ def add_song():
         flash('Host is not authenticated with Spotify.')
         return redirect(url_for('index'))
 
-    if request.method == 'POST':
-        song_query = request.form.get('song_query')
-        if song_query:
-            # Use client credentials for searching
-            client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
-            sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
-            results = sp.search(q=song_query, type='track', limit=10)
-            tracks = results['tracks']['items']
-            return render_template('add_song.html', tracks=tracks)
-        else:
-            flash('Please enter a song query')
-            return redirect(url_for('add_song'))
-    return render_template('add_song.html')
+    # Get the song_query from form data or query parameters
+    song_query = request.form.get('song_query') or request.args.get('song_query')
+    tracks = None
+    if song_query:
+        # Use client credentials for searching
+        client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
+        sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+        results = sp.search(q=song_query, type='track', limit=10)
+        tracks = results['tracks']['items']
+    elif request.method == 'POST' and not song_query:
+        flash('Please enter a song query')
+        return redirect(url_for('add_song'))
+    return render_template('add_song.html', tracks=tracks, song_query=song_query)
 
 @app.route('/queue_song', methods=['POST'])
 def queue_song():
@@ -84,11 +84,10 @@ def queue_song():
         return redirect(url_for('index'))
 
     active_device = get_active_device(sp_host)
-    if not active_device:
-        flash('No active device found. Please start playing music on your Spotify account.')
-        return redirect(url_for('add_song'))
 
     track_uri = request.form.get('track_uri')
+    song_query = request.form.get('song_query')
+
     if track_uri:
         try:
             sp_host.add_to_queue(track_uri, device_id=active_device)
@@ -98,4 +97,5 @@ def queue_song():
     else:
         flash('No track URI provided.')
 
-    return redirect(url_for('add_song'))
+    # Redirect back to add_song with the song_query
+    return redirect(url_for('add_song', song_query=song_query))
