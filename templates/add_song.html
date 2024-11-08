@@ -14,21 +14,29 @@
             Search
           </button>
         </form>
-    {% if tracks %}
-    <div class="track-list mt-6">
-      <h3 class="text-2xl font-bold mb-4">Search Results:</h3>
-    <ul class="w-full mx-auto text-center"></ul>
-        {% for track in tracks %}
-        <li class="track-item">
-          <img src="{{ track.album.images[0].url }}" alt="Album Art">
-          <div>
-            <strong>{{ track.name }}</strong> by {{ track.artists[0].name }}
-          </div>
-        </li>
-        {% endfor %}
-      </ul>
+
+        {% if tracks %}
+        <div class="track-list mt-6">
+          <h3 class="text-2xl font-bold mb-4">Search Results:</h3>
+          <ul class="w-full mx-auto text-center">
+            {% for track in tracks %}
+            <li class="track-item mb-4">
+              <img src="{{ track.album.images[0].url }}" alt="Album Art" class="w-16 h-16 inline-block">
+              <div class="inline-block ml-4">
+                <strong>{{ track.name }}</strong> by {{ track.artists[0].name }}
+              </div>
+              <!-- Form to add track to queue -->
+              <form action="{{ url_for('queue_song') }}" method="POST" class="inline-block ml-4">
+                <input type="hidden" name="track_uri" value="{{ track.uri }}">
+                <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                  Add to Queue
+                </button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
-  </div>
 </body>
 </html>

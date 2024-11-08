@@ -22,7 +22,7 @@ Session(app)
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
 client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 redirect_uri = 'http://127.0.0.1:5002/callback'  # Ensure this matches your Spotify app settings
-scope = 'user-modify-playback-state'
+scope="user-modify-playback-state user-read-playback-state"
 
 sp_oauth = SpotifyOAuth(
     client_id=client_id,

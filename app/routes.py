@@ -4,6 +4,12 @@ import io
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from app import app, sp_oauth, get_spotify_client, get_active_device
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+client_id = os.getenv('SPOTIFY_CLIENT_ID')
+client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 
 # Authentication routes
 @app.route('/login')
@@ -60,7 +66,7 @@ def add_song():
         song_query = request.form.get('song_query')
         if song_query:
             # Use client credentials for searching
-            client_credentials_manager = SpotifyClientCredentials(client_id=app.config['SPOTIFY_CLIENT_ID'], client_secret=app.config['SPOTIFY_CLIENT_SECRET'])
+            client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
             sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
             results = sp.search(q=song_query, type='track', limit=10)
             tracks = results['tracks']['items']
