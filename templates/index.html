@@ -3,6 +3,42 @@
 <head>
   <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='src/css/main.css') }}">
+  <script>
+    setInterval(function() {
+        window.location.reload();
+    }, 60000);
+    
+    function startGlobalCountdown() {
+        let timeLeft = 60; // 60 seconds countdown
+
+        function updateCountdown() {
+            const countdownElement = document.getElementById("countdown-timer");
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+
+            countdownElement.innerHTML = `New QR Code in: ${minutes}m ${seconds}s`;
+
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                countdownElement.innerHTML = "Generating new QR code...";
+            } else {
+                timeLeft--;
+            }
+        }
+
+        updateCountdown();
+        const interval = setInterval(updateCountdown, 1000);
+
+        // Reset the timer every 60 seconds
+        setInterval(() => {
+            clearInterval(interval);
+            startGlobalCountdown();
+        }, 60000);
+    }
+
+    // Start the global countdown timer
+    window.onload = startGlobalCountdown;
+  </script>
 </head>
 <body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
   
@@ -24,12 +60,14 @@
     {% if logged_in %}
     <p class="text-2xl font-semibold text-white mb-8">Scan the QR Code Below to get Started! 🎶</p>
     <div class="flex flex-col items-center">
-        <img src="{{ url_for('qr_code') }}" alt="QR Code" class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform">
+        <img src="{{ url_for('generate_qr', token=token) }}" alt="QR Code" class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform">
+        <!-- <p>Expires at: {{ exp_time }}</p> -->
+        <p id="countdown-timer"></p>
     </div>
     {% else %}
     <p class="text-2xl font-semibold text-white mb-8">Please log in to begin</p>
     <div class="flex flex-col items-center">
-        <a href="{{ url_for('login') }}" class="mt-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+        <a href="{{ url_for('login') }}" class="mt-4 px-4 py-2 bg-softPurple text-white rounded-md hover:softPurple-600">
             Login with Spotify
         </a>
     </div>

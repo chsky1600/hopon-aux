@@ -1,20 +1,42 @@
 from flask import render_template, url_for, send_file, request, redirect, flash, session
-import qrcode
-import io
-import spotipy
+import qrcode, time, threading, io, uuid, spotipy, os
 from spotipy.oauth2 import SpotifyClientCredentials
 from app import app, sp_oauth, get_spotify_client, get_active_device
-import os
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 load_dotenv()
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
 client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
+
+qr_tokens = {}
+
+def generate_qr_code():
+    while True:
+        token = str(uuid.uuid4())
+        expiration_time = datetime.now() + timedelta(seconds=60)
+        qr_tokens[token] = expiration_time
+
+        # Remove expired tokens
+        for token, exp_time in list(qr_tokens.items()):
+            if exp_time <= datetime.now():
+                del qr_tokens[token]
+
+        time.sleep(60)
+
+# Start the background task
+threading.Thread(target=generate_qr_code, daemon=True).start()
+
 
 # Authentication routes
 @app.route('/login')
 def login():
     auth_url = sp_oauth.get_authorize_url()
+    session['logged_in'] = True  # Set the logged_in session variable to True
+    session.permanent = True  # Mark the session as permanent
+    print(f"\n Session logged_in set to: {session['logged_in']}\n")
     return redirect(auth_url)
 
 @app.route('/callback')
@@ -28,35 +50,69 @@ def callback():
 # Main routes
 @app.route('/')
 def index():
+    token_info = session.get('token_info')
     logged_in = session.get('logged_in', False)
-    return render_template('index.html', logged_in=logged_in)
 
-@app.route('/qr_code')
-def qr_code():
-    # Data to encode in the QR code
-    data = url_for('add_song', _external=True)
+    if token_info:
+        session['logged_in'] = True
+    else:
+        session['logged_in'] = False
+    
+    #print(f"\nCurrent Time: {datetime.now()}, Token expires_at: {datetime.fromtimestamp(token_info['expires_at'])}\n")
+    if token_info:
+        print(f"Token Info: {token_info}")
+    else:
+        print("Token Info: None")
+    print(f"Session logged_in retrieved as: {logged_in}")  # Debug statement
+    
 
-    # Generate QR code
+    valid_qr_tokens = {token: exp_time for token, exp_time in qr_tokens.items() if exp_time > datetime.now()}
+    return render_template('index.html', logged_in=logged_in, qr_tokens=valid_qr_tokens)
+
+@app.route('/generate_qr')
+def generate_qr():
+    token = str(uuid.uuid4())
+    expiration_time = datetime.now() + app.config['PERMANENT_SESSION_LIFETIME'] 
+    qr_tokens[token] = expiration_time
+
+    data = f"http://127.0.0.1:5002/scan_qr?token={token}"
     qr = qrcode.QRCode(
         version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=10,
-        border=5
+        border=4,
     )
     qr.add_data(data)
     qr.make(fit=True)
 
-    # Create an image from the QR Code instance
     img = qr.make_image(fill='black', back_color='white')
-
-    # Save the image in a bytes buffer
     img_io = io.BytesIO()
     img.save(img_io, 'PNG')
     img_io.seek(0)
 
+    print(f"\n Redirect URI with QR UUID: {data}\n") # REMOVE on prod
+
     return send_file(img_io, mimetype='image/png')
+
+@app.route('/scan_qr')
+def scan_qr():
+    token = request.args.get('token')
+    if token in qr_tokens and qr_tokens[token] > datetime.now():
+        session['qr_token'] = token
+        session.permanent = True
+        return redirect(url_for('add_song'))
+    else:
+        flash('QR code has expired.')
+        return redirect(url_for('index'))
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
+    token = session.get('qr_token')
+    if not token or token not in qr_tokens or qr_tokens[token] <= datetime.now():
+        session.clear()
+        flash('Session has expired. Please scan the QR code again.')
+        return redirect(url_for('index'))
+    
     sp_host = get_spotify_client()
     if not sp_host:
         flash('Host is not authenticated with Spotify.')

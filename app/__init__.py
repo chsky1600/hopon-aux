@@ -7,6 +7,7 @@ import os
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import secrets
+from datetime import timedelta
 
 load_dotenv()
 
@@ -16,6 +17,7 @@ app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.secret_key = secrets.token_hex(16)
 
 app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')
 Session(app)
 
 # Spotify credentials and auth
