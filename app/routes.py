@@ -4,6 +4,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from app import app, sp_oauth, get_spotify_client, get_active_device
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from flask_socketio import SocketIO, emit
 
 load_dotenv()
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
@@ -11,7 +12,10 @@ client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
 
+socketio = SocketIO(app)
+
 qr_tokens = {}
+active_scanners = []
 
 def generate_qr_code():
     while True:
@@ -67,7 +71,7 @@ def index():
     
     # print(f"\n {token_info} \n")
     valid_qr_tokens = {token: exp_time for token, exp_time in qr_tokens.items() if exp_time > datetime.now()}
-    return render_template('index.html', logged_in=logged_in, qr_tokens=valid_qr_tokens)
+    return render_template('index.html', logged_in=logged_in, qr_tokens=valid_qr_tokens, active_scanners=active_scanners)
 
 @app.route('/generate_qr')
 def generate_qr():
@@ -92,21 +96,42 @@ def generate_qr():
 
     return send_file(img_io, mimetype='image/png')
 
-@app.route('/scan_qr')
+@app.route('/scan_qr', methods=['GET', 'POST'])
 def scan_qr():
     token = request.args.get('token')
-    # print(f"\nSCAN_QR TOKEN: {token}\n")
     if token in qr_tokens and qr_tokens[token] > datetime.now():
         session['qr_token'] = token
         session.permanent = True
-        return redirect(url_for('add_song'))
+        return redirect(url_for('input_name'))
     else:
         flash('QR code has expired.')
         return redirect(url_for('index'))
+    
+@app.route('/input_name', methods=['GET', 'POST'])
+def input_name():
+
+    token = session.get('qr_token')
+    if not token or token not in qr_tokens or qr_tokens[token] <= datetime.now():
+        session.clear()
+        flash('Session has expired. Please scan the QR code again.')
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        if name:
+            active_scanners.append(name)
+            socketio.emit('new_scanner', {'name': name})  # Emit event to notify clients
+            return redirect(url_for('add_song'))
+        else:
+            flash('Name is required.')
+            return redirect(url_for('input_name'))
+    return render_template('input_name.html')
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
-    # print(f"\nCurrent QR Tokens: {qr_tokens}\n")
+
+    for i in active_scanners:
+        print(f"\nActive Scanner: {active_scanners}\n")
 
     token = session.get('qr_token')
     if not token or token not in qr_tokens or qr_tokens[token] <= datetime.now():
@@ -158,3 +183,7 @@ def queue_song():
     return redirect(url_for('add_song', song_query=song_query))
 
 
+# index --> input_name --> add_song
+
+if __name__ == '__main__':
+    socketio.run(app)

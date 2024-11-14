@@ -3,7 +3,7 @@ setInterval(function() {
 }, 180000);
 
 function startGlobalCountdown() {
-    let timeLeft = 1800; 
+    let timeLeft = localStorage.getItem('timeLeft') ? parseInt(localStorage.getItem('timeLeft')) : 1800;
 
     function updateCountdown() {
         const countdownElement = document.getElementById("countdown-timer");
@@ -15,8 +15,10 @@ function startGlobalCountdown() {
         if (timeLeft <= 0) {
             clearInterval(interval);
             countdownElement.innerHTML = "Generating new QR code...";
+            localStorage.removeItem('timeLeft');
         } else {
             timeLeft--;
+            localStorage.setItem('timeLeft', timeLeft);
         }
     }
 
@@ -36,6 +38,15 @@ function copyQrCode(url) {
     }, function(err) {
         console.error('Could not copy text: ', err);
     });
+}
+
+function addScannerToList(name) {
+    window.location.reload();
+    const list = document.getElementById('active-scanners-list');
+    const listItem = document.createElement('li');
+    listItem.className = 'text-blue-500';
+    listItem.textContent = name;
+    list.appendChild(listItem);
 }
 
 

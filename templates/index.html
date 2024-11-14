@@ -4,6 +4,17 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='src/css/main.css') }}">
   <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+      const socket = io();
+
+      socket.on('new_scanner', (data) => {
+        console.log('New scanner added:', data.name);
+        addScannerToList(data.name);
+      });
+    });
+  </script>
 </head>
 <body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
@@ -20,7 +31,7 @@
     <span class="note-animation text-4xl text-softPurple absolute bottom-32 right-20">🎵</span>
   </div>
 
-
+ 
   
   <!-- Main Content Container -->
   <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[36rem] backdrop-blur-lg qr-container">
@@ -43,6 +54,18 @@
         </a>
     </div>
     {% endif %}
+
+     
+  </div>
+
+  <!-- Active Scanners List -->
+  <div class="absolute top-4 right-4 bg-white bg-opacity-90 p-4 rounded-lg shadow-lg">
+    <h3 class="text-xl font-bold mb-2">Active Scanners</h3>
+    <ul class="list-disc list-inside">
+      {% for scanner in active_scanners %}
+      <li class="text-blue-500">{{ scanner }}</li>
+      {% endfor %}
+    </ul>
   </div>
             
 </body>
