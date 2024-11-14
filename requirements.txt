@@ -4,4 +4,4 @@ pymongo
 qrcode[pil]
 python-dotenv
 flask-session
-secrets
+flask_socketio

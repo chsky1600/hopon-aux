@@ -4,6 +4,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from app import app, sp_oauth, get_spotify_client, get_active_device
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from flask_socketio import SocketIO, emit
 
 load_dotenv()
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
@@ -11,15 +12,18 @@ client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
 
+socketio = SocketIO(app)
+
 qr_tokens = {}
+active_scanners = []
 
 def generate_qr_code():
     while True:
         token = str(uuid.uuid4())
-        expiration_time = datetime.now() + timedelta(seconds=60)
+        expiration_time = datetime.now() + timedelta(minutes=30)
         qr_tokens[token] = expiration_time
         print(f"Generated QR Token: {token}, Expires at: {expiration_time}")
-        time.sleep(60)
+        time.sleep(1800)
 
 def remove_expired_tokens():
     while True:
@@ -29,7 +33,7 @@ def remove_expired_tokens():
             del qr_tokens[token]
             print(f"Removed expired token: {token}")
         print(f"Current QR Tokens: {qr_tokens}")
-        time.sleep(30)
+        time.sleep(900)
 
 # Start the background tasks
 threading.Thread(target=generate_qr_code, daemon=True).start()
@@ -41,7 +45,7 @@ def login():
     auth_url = sp_oauth.get_authorize_url()
     session['logged_in'] = True  # Set the logged_in session variable to True
     session.permanent = True  # Mark the session as permanent
-    print(f"\n Session logged_in set to: {session['logged_in']}\n")
+    # print(f"\n Session logged_in set to: {session['logged_in']}\n")
     return redirect(auth_url)
 
 @app.route('/callback')
@@ -63,11 +67,11 @@ def index():
     else:
         session['logged_in'] = False
     
-    print(f"\nSession logged_in retrieved as: {logged_in}\n")
+    # print(f"\nSession logged_in retrieved as: {logged_in}\n")
     
-    print(f"\n {token_info} \n")
+    # print(f"\n {token_info} \n")
     valid_qr_tokens = {token: exp_time for token, exp_time in qr_tokens.items() if exp_time > datetime.now()}
-    return render_template('index.html', logged_in=logged_in, qr_tokens=valid_qr_tokens)
+    return render_template('index.html', logged_in=logged_in, qr_tokens=valid_qr_tokens, active_scanners=active_scanners)
 
 @app.route('/generate_qr')
 def generate_qr():
@@ -88,25 +92,46 @@ def generate_qr():
     img.save(img_io, 'PNG')
     img_io.seek(0)
 
-    print(f"\n Redirect URI with QR UUID: {data}\n") # REMOVE on prod
+    # print(f"\n Redirect URI with QR UUID: {data}\n") # REMOVE on prod
 
     return send_file(img_io, mimetype='image/png')
 
-@app.route('/scan_qr')
+@app.route('/scan_qr', methods=['GET', 'POST'])
 def scan_qr():
     token = request.args.get('token')
-    print(f"\nSCAN_QR TOKEN: {token}\n")
     if token in qr_tokens and qr_tokens[token] > datetime.now():
         session['qr_token'] = token
         session.permanent = True
-        return redirect(url_for('add_song'))
+        return redirect(url_for('input_name'))
     else:
         flash('QR code has expired.')
         return redirect(url_for('index'))
+    
+@app.route('/input_name', methods=['GET', 'POST'])
+def input_name():
+
+    token = session.get('qr_token')
+    if not token or token not in qr_tokens or qr_tokens[token] <= datetime.now():
+        session.clear()
+        flash('Session has expired. Please scan the QR code again.')
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        if name:
+            active_scanners.append(name)
+            socketio.emit('new_scanner', {'name': name})  # Emit event to notify clients
+            return redirect(url_for('add_song'))
+        else:
+            flash('Name is required.')
+            return redirect(url_for('input_name'))
+    return render_template('input_name.html')
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
-    print(f"\nCurrent QR Tokens: {qr_tokens}\n")
+
+    for i in active_scanners:
+        print(f"\nActive Scanner: {active_scanners}\n")
 
     token = session.get('qr_token')
     if not token or token not in qr_tokens or qr_tokens[token] <= datetime.now():
@@ -156,3 +181,9 @@ def queue_song():
 
     # Redirect back to add_song with the song_query
     return redirect(url_for('add_song', song_query=song_query))
+
+
+# index --> input_name --> add_song
+
+if __name__ == '__main__':
+    socketio.run(app)

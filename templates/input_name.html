@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enter Your Name</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='src/css/main.css') }}">
+
+</head>
+<body class="bg-gray-100 text-gray-900 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4">Enter Your Name</h1>
+    <form action="{{ url_for('input_name') }}" method="POST">
+      <input type="text" name="name" placeholder="Your Name" required class="w-full p-2 border border-gray-300 rounded mb-4">
+      <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded">Submit</button>
+    </form>
+  </div>
+</body>
+</html>

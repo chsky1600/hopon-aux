@@ -4,3 +4,4 @@ flask_session/
 .env
 .cache
 .spotifycache
+app/__pycache__/
