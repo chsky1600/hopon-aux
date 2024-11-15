@@ -18,11 +18,11 @@
 </head>
 <body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
-   <!-- Full-width Welcome Banner with Glow -->
+  <!-- Full-width Welcome Banner with Glow -->
   <header class="w-full text-center mb-12 px-4">
     <h1 class="text-8xl font-extrabold text-white uppercase glow-text">Welcome to Hopon!</h1>
   </header>
-  
+
   <!-- Floating Notes Container -->
   <div class="floating-notes absolute inset-0 pointer-events-none">
     <span class="note-animation text-4xl text-softPurple absolute top-10 left-16">🎶</span>
@@ -31,47 +31,69 @@
     <span class="note-animation text-4xl text-softPurple absolute bottom-32 right-20">🎵</span>
   </div>
 
- 
-  
-  <!-- Main Content Container -->
-  <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[36rem] backdrop-blur-lg qr-container">
-    {% if logged_in %}
-    {% for token, exp_time in qr_tokens.items() %}
-    <p class="text-2xl font-semibold text-white mb-8">Scan the QR Code Below to get Started! 🎶</p>
-    <div class="flex flex-col items-center">
-        <img src="{{ url_for('generate_qr', token=token) }}"
-        alt="QR Code" 
-        class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform"
-        onclick="copyQrCode('{{ url_for('scan_qr', token=token, _external=True) }}')">
-        {% endfor %}
-        <p id="countdown-timer"></p>
+  <!-- Main Content and Active Scanners Container -->
+  <div class="relative flex items-center justify-center w-full h-full">
+
+    <!-- Main Content Container -->
+    <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[36rem] backdrop-blur-lg qr-container">
+      {% if logged_in %}
+      {% for token, exp_time in qr_tokens.items() %}
+      <p class="text-2xl font-semibold text-white mb-8">Scan the QR Code Below to get Started! 🎶</p>
+      <div class="flex flex-col items-center">
+          <img src="{{ url_for('generate_qr', token=token) }}"
+          alt="QR Code" 
+          class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform"
+          onclick="copyQrCode('{{ url_for('scan_qr', token=token, _external=True) }}')">
+          {% endfor %}
+          <p id="countdown-timer"></p>
+      </div>
+      {% else %}
+      <p class="text-2xl font-semibold text-white mb-8">Please log in to begin</p>
+      <div class="flex flex-col items-center">
+          <a href="{{ url_for('login') }}" class="mt-4 px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600">
+              Login with Spotify
+          </a>
+      </div>
+      {% endif %}
     </div>
-    {% else %}
-    <p class="text-2xl font-semibold text-white mb-8">Please log in to begin</p>
-    <div class="flex flex-col items-center">
-        <a href="{{ url_for('login') }}" class="mt-4 px-4 py-2 bg-softPurple text-white rounded-md hover:softPurple-600">
-            Login with Spotify
-        </a>
+
+    {% if logged_in %}
+    <!-- Floating Active Scanners -->
+    <div class="absolute inset-0 pointer-events-none">
+      {% set positions = [
+        {'top': '10%', 'left': '10%'},
+        {'top': '20%', 'right': '15%'},
+        {'bottom': '15%', 'left': '20%'},
+        {'bottom': '25%', 'right': '10%'},
+        {'top': '50%', 'left': '5%'},
+        {'bottom': '5%', 'right': '50%'},
+        {'top': '75%', 'left': '75%'},
+        {'bottom': '40%', 'right': '20%'},
+      ] %}
+      {% set durations = ['7s', '9s', '8s', '10s', '6s', '11s', '9s', '8s'] %}
+      {% set delays = ['0s', '1s', '2s', '3s', '0.5s', '1.5s', '2.5s', '3.5s'] %}
+      {% for scanner in active_scanners %}
+      {% set pos = positions[loop.index0 % positions|length] %}
+      <div class="text-white text-2xl font-semibold glow-text animate-scanner absolute" style="
+        {% if pos.top %} top: {{ pos.top }}; {% endif %}
+        {% if pos.bottom %} bottom: {{ pos.bottom }}; {% endif %}
+        {% if pos.left %} left: {{ pos.left }}; {% endif %}
+        {% if pos.right %} right: {{ pos.right }}; {% endif %}
+        animation-duration: {{ durations[loop.index0 % durations|length] }};
+        animation-delay: {{ delays[loop.index0 % delays|length] }};
+        ">
+        {{ scanner }}
+      </div>
+      {% endfor %}
     </div>
     {% endif %}
 
-     
   </div>
 
-  <!-- Active Scanners List -->
-  <div class="absolute top-4 right-4 bg-white bg-opacity-90 p-4 rounded-lg shadow-lg">
-    <h3 class="text-xl font-bold mb-2">Active Scanners</h3>
-    <ul class="list-disc list-inside">
-      {% for scanner in active_scanners %}
-      <li class="text-blue-500">{{ scanner }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-
-   <!-- Footer -->
-   <footer class="absolute bottom-4 text-center w-full text-white">
+  <!-- Footer -->
+  <footer class="absolute bottom-4 text-center w-full text-white">
     <p>Made with <span class="text-red-500">&hearts;</span> by <a href="https://github.com/chsky1600" class="text-blue-500 underline">1600</a> and <a href="https://github.com/trisslazaj" class="text-blue-500 underline">Tani</a></p>
   </footer>
-            
+
 </body>
 </html>
