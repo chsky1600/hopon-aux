@@ -49,6 +49,7 @@ function addScannerToList(name) {
     list.appendChild(listItem);
 }
 
-
-// Start the global countdown timer
-window.onload = startGlobalCountdown;
+window.onload = function() {
+    localStorage.removeItem('timeLeft'); 
+    startGlobalCountdown();
+};
