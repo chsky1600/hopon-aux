@@ -18,6 +18,15 @@
 </head>
 <body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
+  <!-- Logout Button -->
+  {% if logged_in %}
+  <div class="absolute top-4 right-4">
+    <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600">
+      Logout
+    </a>
+  </div>
+  {% endif %}
+
   <!-- Full-width Welcome Banner with Glow -->
   <header class="w-full text-center mb-12 px-4">
     <h1 class="text-8xl font-extrabold text-white uppercase glow-text">Welcome to Hopon!</h1>
@@ -37,7 +46,7 @@
     <!-- Main Content Container -->
     <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[36rem] backdrop-blur-lg qr-container">
       {% if logged_in %}
-      {% for token, exp_time in qr_tokens.items() %}
+      {% for token, exp_time in config['qr_tokens'].items() %}
       <p class="text-2xl font-semibold text-white mb-8">Scan the QR Code Below to get Started! 🎶</p>
       <div class="flex flex-col items-center">
           <img src="{{ url_for('generate_qr', token=token) }}"
