@@ -3,8 +3,18 @@
 <head>
   <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='src/css/main.css') }}">
-  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+  
+  <!-- Embed the token expiration timestamp into a JavaScript variable -->
+  <script>
+    const tokenExpiration = {{ token_expiration if token_expiration else 'null' }};
+  </script>
+  
+  <!-- Include SocketIO client library -->
   <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  
+  <!-- Your existing JavaScript file -->
+  <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+  
   <script>
     document.addEventListener('DOMContentLoaded', (event) => {
       const socket = io();
@@ -46,14 +56,12 @@
     <!-- Main Content Container -->
     <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[36rem] backdrop-blur-lg qr-container">
       {% if logged_in %}
-      {% for token, exp_time in config['qr_tokens'].items() %}
       <p class="text-2xl font-semibold text-white mb-8">Scan the QR Code Below to get Started! 🎶</p>
       <div class="flex flex-col items-center">
-          <img src="{{ url_for('generate_qr', token=token) }}"
+          <img src="{{ url_for('generate_qr', token=current_token) }}"
           alt="QR Code" 
           class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform"
-          onclick="copyQrCode('{{ url_for('scan_qr', token=token, _external=True) }}')">
-          {% endfor %}
+          onclick="copyQrCode('{{ url_for('scan_qr', token=current_token, _external=True) }}')">
           <p id="countdown-timer"></p>
       </div>
       {% else %}

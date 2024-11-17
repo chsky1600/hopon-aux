@@ -26,6 +26,9 @@ def generate_token():
         expiration_time = datetime.now() + timedelta(minutes=30)
         app.config['qr_tokens'][token] = expiration_time
         #print(f"Generated QR Token: {token}, Expires at: {expiration_time}")
+        
+        socketio.emit('new_token', {'token': token})  # Emit event to notify clients
+        
 
 def remove_expired_tokens():
     with app.app_context():
@@ -81,6 +84,12 @@ def index():
     ensure_session_initialized()
     if app.config['qr_tokens'] == {}:
         generate_token()
+        
+        
+    current_token = next(iter(app.config['qr_tokens']), None)
+    expiration_time = app.config['qr_tokens'][current_token] if current_token else None
+    expiration_timestamp = expiration_time.timestamp() if expiration_time else None
+    
     # print(f"\nCurrent session: {session}")
     print(f"\n\nToken info: {app.config['qr_tokens']}\n\n")
     token_info = session.get('token_info')
@@ -95,7 +104,7 @@ def index():
     
     # print(f"\n {token_info} \n")
     valid_qr_tokens = {token: exp_time for token, exp_time in app.config['qr_tokens'].items() if exp_time > datetime.now()}
-    return render_template('index.html', logged_in=logged_in, qr_tokens=app.config['qr_tokens'], active_scanners=app.config['active_scanners'])
+    return render_template('index.html', logged_in=logged_in, qr_tokens=app.config['qr_tokens'], active_scanners=app.config['active_scanners'], current_token=current_token, token_expiration=expiration_timestamp)
 
 @app.route('/generate_qr')
 def generate_qr():
