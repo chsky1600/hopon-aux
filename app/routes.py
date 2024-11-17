@@ -5,6 +5,7 @@ from app import app, sp_oauth, get_spotify_client, get_active_device
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, emit
+from db.redis import test_connection
 
 load_dotenv()
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
@@ -81,6 +82,7 @@ def callback():
 # Main routes
 @app.route('/')
 def index():
+    redis_status = test_connection()
     ensure_session_initialized()
     if app.config['qr_tokens'] == {}:
         generate_token()
@@ -104,7 +106,7 @@ def index():
     
     # print(f"\n {token_info} \n")
     valid_qr_tokens = {token: exp_time for token, exp_time in app.config['qr_tokens'].items() if exp_time > datetime.now()}
-    return render_template('index.html', logged_in=logged_in, qr_tokens=app.config['qr_tokens'], active_scanners=app.config['active_scanners'], current_token=current_token, token_expiration=expiration_timestamp)
+    return render_template('index.html', logged_in=logged_in, qr_tokens=app.config['qr_tokens'], active_scanners=app.config['active_scanners'], current_token=current_token, token_expiration=expiration_timestamp, redis_status=redis_status)
 
 @app.route('/generate_qr')
 def generate_qr():
