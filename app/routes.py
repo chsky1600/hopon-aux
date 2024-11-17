@@ -110,7 +110,7 @@ def index():
 def generate_qr():
     token = next(iter(app.config['qr_tokens']), None)
 
-    data = f"http://127.0.0.1:5002/scan_qr?token={token}"
+    data = f"https://hopon-1c8107845ac3.herokuapp.com/scan_qr?token={token}"
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
