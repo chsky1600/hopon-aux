@@ -1,124 +1,79 @@
 from flask import render_template, url_for, send_file, request, redirect, flash, session
-import qrcode, time, threading, io, uuid, spotipy, os
+import qrcode, redis, io, uuid, spotipy, os
 from spotipy.oauth2 import SpotifyClientCredentials
 from app import app, sp_oauth, get_spotify_client, get_active_device
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, emit
-from db.redis import test_connection
+from db.redis import (
+    test_connection,
+    insert_qr_token,
+    get_valid_token,
+    remove_expired_tokens,
+    delete_session_set
+)
 
 load_dotenv()
+redis_client = redis.from_url(os.getenv('REDIS_URL'))
+
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
 client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 app.config['SESSION_PERMANENT'] = False
+app.config['TOKEN_EXPIRATION'] = timedelta(minutes=30)
 
 socketio = SocketIO(app, logger=False, engineio_logger=False)
 
-def ensure_session_initialized():
-    if 'qr_tokens' not in app.config:
-        app.config['qr_tokens'] = {}
-    if 'active_scanners' not in app.config:
-        app.config['active_scanners'] = []
-
 def generate_token():
-    with app.app_context():
-        ensure_session_initialized() 
-        token = str(uuid.uuid4())
-        expiration_time = datetime.now() + timedelta(minutes=30)
-        app.config['qr_tokens'][token] = expiration_time
-        #print(f"Generated QR Token: {token}, Expires at: {expiration_time}")
-        
-        socketio.emit('new_token', {'token': token})  # Emit event to notify clients
-        
+    """
+    Generate a new QR token, store it in Redis, and emit it to clients.
+    """
+    session_id = session.get('session_id')
+    if not session_id:
+        session_id = str(uuid.uuid4())
+        session['session_id'] = session_id
 
-def remove_expired_tokens():
-    with app.app_context():
-        ensure_session_initialized() 
-        current_time = datetime.now()
-        logged_in = session.get('logged_in', False)
-        expired_tokens = [token for token, exp_time in app.config['qr_tokens'].items() if exp_time <= current_time or not logged_in]
-        for token in expired_tokens:
-            del app.config['qr_tokens'][token]
-            #print(f"Removed expired token: {token}")
-        #print(f"Current QR Tokens: {app.config['qr_tokens']}")
+    token = str(uuid.uuid4())
+    insert_qr_token(session_id, token, app.config['TOKEN_EXPIRATION'])
 
-# Start the background tasks
-# threading.Thread(target=generate_token, daemon=True).start()
-# threading.Thread(target=remove_expired_tokens, daemon=True).start()
+    socketio.emit('new_token', {'token': token})
+    return token
 
-# Authentication routes
-@app.route('/login')
-def login():
-    ensure_session_initialized()
-    #print(f"\nCurrent session: {session}")
-    #print(f"Token info: {app.config['qr_tokens']}\n")
-    auth_url = sp_oauth.get_authorize_url()
-    session['logged_in'] = True  # Set the logged_in session variable to True
-    session.permanent = False  # Mark the session as permanent
-    # print(f"\n Session logged_in set to: {session['logged_in']}\n")
-    return redirect(auth_url)
-
-@app.route('/logout')
-def logout():
-    token = session.get('qr_token')
-    if token and token in app.config['qr_tokens']:
-        with app.app_context():
-            del app.config['qr_tokens'][token]
-
-    session.clear()
-    remove_expired_tokens()
-    app.config.pop('qr_tokens', None)
-    app.config.pop('active_scanners', None)
-    flash('You have been logged out.')
-    return redirect(url_for('index'))
-
-@app.route('/callback')
-def callback():
-    code = request.args.get('code')
-    token_info = sp_oauth.get_access_token(code)
-    session['token_info'] = token_info
-    return redirect(url_for('index'))
-
-# Main routes
 @app.route('/')
 def index():
     redis_status = test_connection()
-    ensure_session_initialized()
-    if app.config['qr_tokens'] == {}:
-        generate_token()
-        
-        
-    current_token = next(iter(app.config['qr_tokens']), None)
-    expiration_time = app.config['qr_tokens'][current_token] if current_token else None
-    expiration_timestamp = expiration_time.timestamp() if expiration_time else None
-    
-    # print(f"\nCurrent session: {session}")
-    print(f"\n\nToken info: {app.config['qr_tokens']}\n\n")
-    token_info = session.get('token_info')
+    session_id = session.get('session_id')
     logged_in = session.get('logged_in', False)
+    current_token, expiration_timestamp = None, None
+    token_info = session.get('token_info')
 
-    if token_info:
-        session['logged_in'] = True
-    else:
-        session['logged_in'] = False
-    
-    # print(f"\nSession logged_in retrieved as: {logged_in}\n")
-    
-    # print(f"\n {token_info} \n")
-    valid_qr_tokens = {token: exp_time for token, exp_time in app.config['qr_tokens'].items() if exp_time > datetime.now()}
-    return render_template('index.html',
-    logged_in=logged_in, 
-    qr_tokens=app.config['qr_tokens'],
-    active_scanners=app.config['active_scanners'], 
-    current_token=current_token, 
-    token_expiration=expiration_timestamp, 
-    redis_status=redis_status)
+    session['logged_in'] = bool(token_info)
+
+    if session['logged_in']:
+
+        current_token = get_valid_token(session_id)
+
+        if current_token:
+            expiration_time = redis_client.ttl(f"qr_token:{current_token}")
+            expiration_timestamp = datetime.now() + timedelta(seconds=expiration_time)
+        else:
+            current_token = generate_token()
+            expiration_timestamp = datetime.now() + app.config['TOKEN_EXPIRATION']
+        
+    return render_template(
+        'index.html',
+        logged_in=logged_in,
+        current_token=current_token,
+        token_expiration=expiration_timestamp,
+        redis_status=redis_status
+    )
 
 @app.route('/generate_qr')
 def generate_qr():
-    token = next(iter(app.config['qr_tokens']), None)
+    token = get_valid_token(session.get('session_id'))
+    if not token:
+        token = generate_token()
 
-    data = f"https://hopon-1c8107845ac3.herokuapp.com/scan_qr?token={token}"
+    data = f"http://127.0.0.1:5002/scan_qr?token={token}"
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -133,25 +88,26 @@ def generate_qr():
     img.save(img_io, 'PNG')
     img_io.seek(0)
 
-    # print(f"\n Redirect URI with QR UUID: {data}\n") # REMOVE on prod
-
     return send_file(img_io, mimetype='image/png')
 
 @app.route('/scan_qr', methods=['GET', 'POST'])
 def scan_qr():
+    session_id = session.get('session_id')
     token = request.args.get('token')
-    if token in app.config['qr_tokens'] and app.config['qr_tokens'][token] > datetime.now():
+
+    if token and get_valid_token(session_id) == token:
         session['qr_token'] = token
         return redirect(url_for('input_name'))
     else:
-        flash('QR code has expired.')
+        flash('QR code has expired or is invalid.')
         return redirect(url_for('index'))
-    
+
 @app.route('/input_name', methods=['GET', 'POST'])
 def input_name():
-
     token = session.get('qr_token')
-    if not token or token not in app.config['qr_tokens'] or app.config['qr_tokens'][token] <= datetime.now():
+    session_id = session.get('session_id')
+
+    if not token or get_valid_token(session_id) != token:
         session.clear()
         flash('Session has expired. Please scan the QR code again.')
         return redirect(url_for('index'))
@@ -159,36 +115,32 @@ def input_name():
     if request.method == 'POST':
         name = request.form.get('name')
         if name:
-            app.config['active_scanners'].append(name)
-            socketio.emit('new_scanner', {'name': name})  # Emit event to notify clients
+            # Store active scanner name in Redis
+            redis_client.sadd("active_scanners", name)
+            socketio.emit('new_scanner', {'name': name})
             return redirect(url_for('add_song'))
         else:
             flash('Name is required.')
-            return redirect(url_for('input_name'))
     return render_template('input_name.html')
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
-
-    for i in app.config['active_scanners']:
-        print(f"\nActive Scanner: {app.config['active_scanners']}\n")
-
     token = session.get('qr_token')
-    if not token or token not in app.config['qr_tokens'] or app.config['qr_tokens'][token] <= datetime.now():
+    session_id = session.get('session_id')
+
+    if not token or get_valid_token(session_id) != token:
         session.clear()
         flash('Session has expired. Please scan the QR code again.')
         return redirect(url_for('index'))
-    
+
     sp_host = get_spotify_client()
     if not sp_host:
         flash('Host is not authenticated with Spotify.')
         return redirect(url_for('index'))
 
-    # Get the song_query from form data or query parameters
     song_query = request.form.get('song_query') or request.args.get('song_query')
     tracks = None
     if song_query:
-        # Use client credentials for searching
         client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
         sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
         results = sp.search(q=song_query, type='track', limit=10)
@@ -219,11 +171,38 @@ def queue_song():
     else:
         flash('No track URI provided.')
 
-    # Redirect back to add_song with the song_query
     return redirect(url_for('add_song', song_query=song_query))
 
+@app.route('/login')
+def login():
+    session_id = session.get('session_id')
+    print(f"\n(logged in) Session ID: {session_id}\n")
+    if not session_id:
+        session_id = str(uuid.uuid4())
+        session['session_id'] = session_id
+    session['logged_in'] = True
+    session.permanent = False
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
 
-# index --> input_name --> add_song
+@app.route('/logout')
+def logout():
+    session_id = session.get('session_id')
+    print(f"\n(as logging out) Session ID: {session_id}\n")
+
+    delete_session_set(session_id)
+
+    session.clear()
+    session['logged_in'] = False
+    flash('You have been logged out.')
+    return redirect(url_for('index'))
+
+@app.route('/callback')
+def callback():
+    code = request.args.get('code')
+    token_info = sp_oauth.get_access_token(code)
+    session['token_info'] = token_info
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     socketio.run(app)
