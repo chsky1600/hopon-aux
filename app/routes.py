@@ -106,7 +106,13 @@ def index():
     
     # print(f"\n {token_info} \n")
     valid_qr_tokens = {token: exp_time for token, exp_time in app.config['qr_tokens'].items() if exp_time > datetime.now()}
-    return render_template('index.html', logged_in=logged_in, qr_tokens=app.config['qr_tokens'], active_scanners=app.config['active_scanners'], current_token=current_token, token_expiration=expiration_timestamp, redis_status=redis_status)
+    return render_template('index.html',
+    logged_in=logged_in, 
+    qr_tokens=app.config['qr_tokens'],
+    active_scanners=app.config['active_scanners'], 
+    current_token=current_token, 
+    token_expiration=expiration_timestamp, 
+    redis_status=redis_status)
 
 @app.route('/generate_qr')
 def generate_qr():
