@@ -9,7 +9,8 @@ from db.redis import (
     test_connection,
     insert_qr_token,
     get_valid_token,
-    delete_session_set
+    delete_session_set,
+    insert_active_scanner
 )
 
 load_dotenv()
@@ -27,7 +28,8 @@ def generate_token():
     Generate a new QR token, store it in Redis, and emit it to clients.
     """
     session_id = session.get('session_id')
-    if not session_id:
+    if not session_id and session['logged_in']:
+        print("[DEBUG] Missing session_id, generating a new one.")
         session_id = str(uuid.uuid4())
         session['session_id'] = session_id
 
@@ -116,7 +118,8 @@ def input_name():
         name = request.form.get('name')
         if name:
             # Store active scanner name in Redis
-            redis_client.sadd("active_scanners", name)
+            insert_active_scanner(session_id, name)
+            # redis_client.sadd("active_scanners", name)
             socketio.emit('new_scanner', {'name': name})
             return redirect(url_for('add_song'))
         else:
