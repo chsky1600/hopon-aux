@@ -31,16 +31,20 @@ def insert_qr_token(session_id, token, expiration=timedelta(minutes=30)):
 
 def get_valid_token(session_id):
     """
-    Retrieve all valid tokens (non-expired) from the session set.
+    Retrieve the first valid token (non-expired) from the session set.
 
     :param session_id: The ID of the session.
-    :return: List of valid tokens.
+    :return: The first valid token or None if no valid token exists.
     """
     session_set_name = f"session_{session_id}"
     current_time = datetime.now().timestamp()
 
-    # Get tokens whose expiration time has not passed
-    return redis_client.zrangebyscore(session_set_name, current_time, '+inf')
+    # Get the first token whose expiration time has not passed
+    tokens = redis_client.zrangebyscore(session_set_name, current_time, '+inf', start=0, num=1)
+    
+    if tokens:
+        return tokens[0].decode('utf-8')
+    return None
 
 def remove_expired_tokens(session_id):
     """

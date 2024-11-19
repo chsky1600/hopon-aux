@@ -9,7 +9,6 @@ from db.redis import (
     test_connection,
     insert_qr_token,
     get_valid_token,
-    remove_expired_tokens,
     delete_session_set
 )
 
@@ -94,7 +93,8 @@ def generate_qr():
 def scan_qr():
     session_id = session.get('session_id')
     token = request.args.get('token')
-
+    print(token)
+    
     if token and get_valid_token(session_id) == token:
         session['qr_token'] = token
         return redirect(url_for('input_name'))
