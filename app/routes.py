@@ -1,81 +1,87 @@
-from flask import render_template, url_for, send_file, request, redirect, flash, session
-import qrcode, time, threading, io, uuid, spotipy, os
+from flask import render_template, url_for, send_file, request, redirect, flash, session, get_flashed_messages, jsonify
+import qrcode, redis, io, uuid, spotipy, os
+from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
 from app import app, sp_oauth, get_spotify_client, get_active_device
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, emit
+from db.redis import (
+    test_connection,
+    insert_qr_token,
+    get_valid_token,
+    delete_session_set,
+    get_active_scanners,
+    insert_active_scanner
+)
 
 load_dotenv()
+redis_client = redis.from_url(os.getenv('REDIS_URL'))
+
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
 client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
-app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
+app.config['SESSION_PERMANENT'] = False
+app.config['TOKEN_EXPIRATION'] = timedelta(minutes=30)
 
-socketio = SocketIO(app)
+socketio = SocketIO(app, logger=False, engineio_logger=False)
 
-qr_tokens = {}
-active_scanners = []
 
-def generate_qr_code():
-    while True:
-        token = str(uuid.uuid4())
-        expiration_time = datetime.now() + timedelta(minutes=30)
-        qr_tokens[token] = expiration_time
-        print(f"Generated QR Token: {token}, Expires at: {expiration_time}")
-        time.sleep(1800)
-
-def remove_expired_tokens():
-    while True:
-        current_time = datetime.now()
-        expired_tokens = [token for token, exp_time in qr_tokens.items() if exp_time <= current_time]
-        for token in expired_tokens:
-            del qr_tokens[token]
-            print(f"Removed expired token: {token}")
-        print(f"Current QR Tokens: {qr_tokens}")
-        time.sleep(900)
-
-# Start the background tasks
-threading.Thread(target=generate_qr_code, daemon=True).start()
-threading.Thread(target=remove_expired_tokens, daemon=True).start()
-
-# Authentication routes
-@app.route('/login')
-def login():
-    auth_url = sp_oauth.get_authorize_url()
-    session['logged_in'] = True  # Set the logged_in session variable to True
-    session.permanent = True  # Mark the session as permanent
-    # print(f"\n Session logged_in set to: {session['logged_in']}\n")
-    return redirect(auth_url)
-
-@app.route('/callback')
-def callback():
-    code = request.args.get('code')
-    token_info = sp_oauth.get_access_token(code)
-    session['token_info'] = token_info
-    session['logged_in'] = True
-    return redirect(url_for('index'))
-
-# Main routes
 @app.route('/')
 def index():
-    token_info = session.get('token_info')
+    # redis_status = test_connection()
+    session_id = session.get('session_id')
+    print(f"Session ID after /callback: {session_id}")
     logged_in = session.get('logged_in', False)
+    current_token = None
+    token_info = session.get('token_info')
+    remaining_ttl = None
+    active_scanners = []
+    user_name = session.get('user_name', 'Guest')
 
-    if token_info:
-        session['logged_in'] = True
+    session['logged_in'] = bool(token_info)
+    print(f"logged_in: {session['logged_in']}")
+    
+    if session['logged_in']:
+        current_token = get_valid_token(session_id)
+        print(f"current_token is: {current_token}")
+        # Get the remaining TTL for the current token
+        remaining_ttl = redis_client.ttl(f"session_{session_id}")
+        print(f"TTL for current token: {remaining_ttl} seconds")
     else:
-        session['logged_in'] = False
+        # Handle when the user is not logged in
+        current_token = None
     
-    # print(f"\nSession logged_in retrieved as: {logged_in}\n")
+    active_scanners= get_active_scanners(session_id)
     
-    # print(f"\n {token_info} \n")
-    valid_qr_tokens = {token: exp_time for token, exp_time in qr_tokens.items() if exp_time > datetime.now()}
-    return render_template('index.html', logged_in=logged_in, qr_tokens=valid_qr_tokens, active_scanners=active_scanners)
+    return render_template(
+    'index.html',
+    logged_in=logged_in,
+    current_token=current_token,
+    remaining_ttl=remaining_ttl if remaining_ttl and remaining_ttl > 0 else 0,
+    active_scanners=active_scanners,
+    user_name=user_name
+)
+
+@app.route('/get_ttl', methods=['GET'])
+def get_ttl():
+    session_id = session.get('session_id')
+    if session_id:
+        ttl = redis_client.ttl(f"session_{session_id}")
+        return jsonify({'ttl': ttl})
+    return jsonify({'error': 'Session ID not found'}), 404
+
+@app.route('/end_session', methods=['POST'])
+def end_session():
+    session_id = session.get('session_id')
+    if session_id:
+        delete_session_set(session_id)  # Call the delete_session_set function
+        session.clear()
+        return jsonify({'message': 'Session ended successfully'}), 200
+    return jsonify({'error': 'Session ID not found'}), 404
 
 @app.route('/generate_qr')
 def generate_qr():
-    token = next(iter(qr_tokens), None)
+    token = get_valid_token(session.get('session_id'))
 
     data = f"http://127.0.0.1:5002/scan_qr?token={token}"
     qr = qrcode.QRCode(
@@ -92,63 +98,63 @@ def generate_qr():
     img.save(img_io, 'PNG')
     img_io.seek(0)
 
-    # print(f"\n Redirect URI with QR UUID: {data}\n") # REMOVE on prod
-
     return send_file(img_io, mimetype='image/png')
 
 @app.route('/scan_qr', methods=['GET', 'POST'])
 def scan_qr():
+    session_id = session.get('session_id')
     token = request.args.get('token')
-    if token in qr_tokens and qr_tokens[token] > datetime.now():
+    print(token)
+    
+    if token and get_valid_token(session_id) == token:
         session['qr_token'] = token
-        session.permanent = True
         return redirect(url_for('input_name'))
     else:
-        flash('QR code has expired.')
+        flash('QR code has expired or is invalid.')
         return redirect(url_for('index'))
-    
+
 @app.route('/input_name', methods=['GET', 'POST'])
 def input_name():
-
     token = session.get('qr_token')
-    if not token or token not in qr_tokens or qr_tokens[token] <= datetime.now():
+    session_id = session.get('session_id')
+
+    if not token or get_valid_token(session_id) != token:
         session.clear()
         flash('Session has expired. Please scan the QR code again.')
         return redirect(url_for('index'))
+    
+    # get_flashed_messages()
 
     if request.method == 'POST':
         name = request.form.get('name')
         if name:
-            active_scanners.append(name)
-            socketio.emit('new_scanner', {'name': name})  # Emit event to notify clients
+            # Store active scanner name in Redis
+            insert_active_scanner(session_id, name)
+            # redis_client.sadd("active_scanners", name)
+            socketio.emit('new_scanner', {'name': name})
             return redirect(url_for('add_song'))
         else:
             flash('Name is required.')
-            return redirect(url_for('input_name'))
     return render_template('input_name.html')
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
-
-    for i in active_scanners:
-        print(f"\nActive Scanner: {active_scanners}\n")
-
     token = session.get('qr_token')
-    if not token or token not in qr_tokens or qr_tokens[token] <= datetime.now():
+    session_id = session.get('session_id')
+
+    if not token or get_valid_token(session_id) != token:
         session.clear()
         flash('Session has expired. Please scan the QR code again.')
         return redirect(url_for('index'))
-    
+
     sp_host = get_spotify_client()
     if not sp_host:
         flash('Host is not authenticated with Spotify.')
         return redirect(url_for('index'))
 
-    # Get the song_query from form data or query parameters
     song_query = request.form.get('song_query') or request.args.get('song_query')
     tracks = None
     if song_query:
-        # Use client credentials for searching
         client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
         sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
         results = sp.search(q=song_query, type='track', limit=10)
@@ -175,15 +181,50 @@ def queue_song():
             sp_host.add_to_queue(track_uri, device_id=active_device)
             flash('Song added to the queue!')
         except spotipy.exceptions.SpotifyException as e:
-            flash(f'Error adding song to queue: {e}')
+            error_message = str(e)
+            if "No active device found" in error_message:
+                flash("Awkward... seems like nothing's playing right now. Go tell your host to put something on!", 'error')  
+            else:
+                flash(f'Error adding song to queue: {e}', 'error')
     else:
-        flash('No track URI provided.')
+        flash('No track URI provided.', 'error')
 
-    # Redirect back to add_song with the song_query
     return redirect(url_for('add_song', song_query=song_query))
 
+@app.route('/login')
+def login():
+    session_id = str(uuid.uuid4())
+    session['session_id'] = session_id
+    print(f"\n(logged in) Session ID: {session_id}\n")
+    session['logged_in'] = True
+    session.permanent = False
+    auth_url = sp_oauth.get_authorize_url()
+    return redirect(auth_url)
 
-# index --> input_name --> add_song
+@app.route('/logout')
+def logout():
+    session_id = session.get('session_id')
+    print(f"\n(as logging out) Session ID: {session_id}\n")
+
+    delete_session_set(session_id)
+
+    session.clear()
+    session['logged_in'] = False
+    return redirect(url_for('index'))
+
+@app.route('/callback')
+def callback():
+    code = request.args.get('code')
+    token_info = sp_oauth.get_access_token(code)
+    session['token_info'] = token_info
+    
+    sp = Spotify(auth=token_info['access_token'])
+    
+    # Fetch the current user's Spotify profile
+    user_profile = sp.me()
+    session['user_name'] = user_profile.get('display_name', user_profile.get('id', 'Guest'))
+    
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     socketio.run(app)
