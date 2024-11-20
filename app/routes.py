@@ -1,4 +1,4 @@
-from flask import render_template, url_for, send_file, request, redirect, flash, session, get_flashed_messages
+from flask import render_template, url_for, send_file, request, redirect, flash, session, get_flashed_messages, jsonify
 import qrcode, redis, io, uuid, spotipy, os
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -24,7 +24,6 @@ app.config['SESSION_PERMANENT'] = False
 app.config['TOKEN_EXPIRATION'] = timedelta(minutes=30)
 
 socketio = SocketIO(app, logger=False, engineio_logger=False)
-
 
 
 @app.route('/')
@@ -62,6 +61,23 @@ def index():
     active_scanners=active_scanners,
     user_name=user_name
 )
+
+@app.route('/get_ttl', methods=['GET'])
+def get_ttl():
+    session_id = session.get('session_id')
+    if session_id:
+        ttl = redis_client.ttl(f"session_{session_id}")
+        return jsonify({'ttl': ttl})
+    return jsonify({'error': 'Session ID not found'}), 404
+
+@app.route('/end_session', methods=['POST'])
+def end_session():
+    session_id = session.get('session_id')
+    if session_id:
+        delete_session_set(session_id)  # Call the delete_session_set function
+        session.clear()
+        return jsonify({'message': 'Session ended successfully'}), 200
+    return jsonify({'error': 'Session ID not found'}), 404
 
 @app.route('/generate_qr')
 def generate_qr():

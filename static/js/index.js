@@ -1,48 +1,58 @@
-// index.js
-
 setInterval(function() {
     window.location.reload();
 }, 180000);
 
-let timeLeft = remainingTime || 0; // Fallback to 0 if remainingTime is null or undefined
+let timeLeft = remainingTime || 0; // fallback to 0 if remainingTime is null or undefined
 
-// Function to start and manage the countdown timer
 function startGlobalCountdown() {
     const countdownElement = document.getElementById("countdown-timer");
 
-    // Function to update the countdown every second
     function updateCountdown() {
         if (!countdownElement) {
             console.error("Countdown timer element not found!");
             return;
         }
 
-        // If time is up, display expiration message
+        // if time is up display expiration message
         if (timeLeft <= 0) {
             countdownElement.innerHTML = "QR code has expired!";
             clearInterval(interval); // Stop the countdown
             return;
         }
 
-        // Calculate minutes and seconds
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
 
-        // Update the DOM with the remaining time
+        // update DOM with remaining time
         countdownElement.innerHTML = `Expires in: ${minutes}m ${seconds}s`;
 
-        // Decrease the remaining time by 1 second
+        // decrease the remaining time by 1 sec
         timeLeft -= 1;
     }
 
-    // Start the countdown immediately and update every second
+    // start the countdown immediately and update every sec
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
+}
+
+function fetchTTLAndUpdateTimer() {
+    console.log('Fetching TTL...');
+    fetch('/get_ttl')
+        .then(response => response.json())
+        .then(data => {
+            console.log('\nTTL Data:', data.ttl, '\n');
+            if (data.ttl) {
+                localStorage.setItem('timeLeft', data.ttl);
+                window.location.reload();
+            }
+        })
+        .catch(error => console.error('Error fetching TTL:', error));
 }
 
 function copyQrCode(url) {
     navigator.clipboard.writeText(url).then(function() {
         alert('Link copied to clipboard!');
+        fetchTTLAndUpdateTimer();
     }, function(err) {
         console.error('Could not copy text: ', err);
     });
@@ -63,3 +73,7 @@ function addScannerToList(name) {
 window.onload = function() {
     startGlobalCountdown();
 };
+
+window.addEventListener('beforeunload', function(event) {
+    navigator.sendBeacon('/end_session');
+});
