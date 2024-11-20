@@ -92,28 +92,30 @@
     <!-- Floating Active Scanners -->
     <div class="absolute inset-0 pointer-events-none">
       {% set positions = [
-        {'top': '10%', 'left': '10%'},
-        {'top': '20%', 'right': '15%'},
-        {'bottom': '15%', 'left': '20%'},
-        {'bottom': '25%', 'right': '10%'},
-        {'top': '50%', 'left': '5%'},
-        {'bottom': '5%', 'right': '50%'},
-        {'top': '75%', 'left': '75%'},
-        {'bottom': '40%', 'right': '20%'},
+      {'top': '10%', 'left': '10%'},
+      {'top': '15%', 'right': '10%'},
+      {'bottom': '15%', 'left': '15%'},
+      {'bottom': '20%', 'right': '10%'},
+      {'top': '50%', 'left': '5%'},
+      {'bottom': '50%', 'right': '80%'}, 
+      {'top': '20%', 'left': '75%'},
+      {'bottom': '40%', 'right': '15%'},
+      {'top': '15%', 'left': '20%'},
+      {'bottom': '10%', 'right': '20%'},
       ] %}
       {% set durations = ['7s', '9s', '8s', '10s', '6s', '11s', '9s', '8s'] %}
       {% set delays = ['0s', '1s', '2s', '3s', '0.5s', '1.5s', '2.5s', '3.5s'] %}
       {% for scanner in active_scanners %}
       {% set pos = positions[loop.index0 % positions|length] %}
-      <div class="text-white text-2xl font-semibold glow-text animate-scanner absolute" style="
-        {% if pos.top %} top: {{ pos.top }}; {% endif %}
-        {% if pos.bottom %} bottom: {{ pos.bottom }}; {% endif %}
-        {% if pos.left %} left: {{ pos.left }}; {% endif %}
-        {% if pos.right %} right: {{ pos.right }}; {% endif %}
-        animation-duration: {{ durations[loop.index0 % durations|length] }};
-        animation-delay: {{ delays[loop.index0 % delays|length] }};
-        ">
-        {{ scanner }}
+      <div class="text-white text-3xl font-semibold glow-text animate-scanner absolute" style="
+      {% if pos.top %} top: {{ pos.top }}; {% endif %}
+      {% if pos.bottom %} bottom: {{ pos.bottom }}; {% endif %}
+      {% if pos.left %} left: {{ pos.left }}; {% endif %}
+      {% if pos.right %} right: {{ pos.right }}; {% endif %}
+      animation-duration: {{ durations[loop.index0 % durations|length] }};
+      animation-delay: {{ delays[loop.index0 % delays|length] }};
+      ">
+      {{ scanner }}
       </div>
       {% endfor %}
     </div>
