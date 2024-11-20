@@ -19,7 +19,7 @@ function startGlobalCountdown() {
 
         // If time is up, display expiration message
         if (timeLeft <= 0) {
-            countdownElement.innerHTML = "Token has expired!";
+            countdownElement.innerHTML = "QR code has expired!";
             clearInterval(interval); // Stop the countdown
             return;
         }
@@ -29,7 +29,7 @@ function startGlobalCountdown() {
         const seconds = timeLeft % 60;
 
         // Update the DOM with the remaining time
-        countdownElement.innerHTML = `Token expires in: ${minutes}m ${seconds}s`;
+        countdownElement.innerHTML = `Expires in: ${minutes}m ${seconds}s`;
 
         // Decrease the remaining time by 1 second
         timeLeft -= 1;

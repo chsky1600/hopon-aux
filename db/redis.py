@@ -42,8 +42,6 @@ def insert_active_scanner(session_id, scanner, expiration=timedelta(minutes=30))
     # Add the scanner to the sorted set with a prefix
     redis_client.zadd(session_set_name, {f"scanner:{scanner}": expiration_timestamp})
     
-    # Ensure the session set has the correct expiration time
-    redis_client.expire(session_set_name, expiration)
     print("Current set contents:", redis_client.zrange(session_set_name, 0, -1, withscores=True))
     
 
@@ -76,6 +74,27 @@ def get_valid_token(session_id):
     token = str(uuid.uuid4())
     insert_qr_token(session_id, token, app.config['TOKEN_EXPIRATION'])
     return token
+
+def get_active_scanners(session_id):
+    """
+    Retrieve all active scanners from the session's sorted set.
+
+    :param session_id: The ID of the session.
+    :return: A list of active scanner names.
+    """
+    session_set_name = f"session_{session_id}"
+    current_time = datetime.now().timestamp()
+
+    # Retrieve all members whose scores (expiration times) are greater than the current time
+    members = redis_client.zrangebyscore(session_set_name, current_time, '+inf')
+    
+    # Filter only scanner names (those prefixed with 'scanner:')
+    scanners = [
+        member.decode('utf-8').split(":", 1)[1]
+        for member in members if member.decode('utf-8').startswith('scanner:')
+    ]
+
+    return scanners
 
 def remove_expired_members(session_id):
     """
