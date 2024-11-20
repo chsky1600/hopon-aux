@@ -1,6 +1,9 @@
 from datetime import timedelta, datetime
 import redis
 import os
+from app import app
+import uuid
+
 
 redis_url = os.getenv('REDIS_URL')
 redis_client = redis.from_url(redis_url)
@@ -55,13 +58,24 @@ def get_valid_token(session_id):
     current_time = datetime.now().timestamp()
 
     # Get the first token whose expiration time has not passed
-    members = redis_client.zrangebyscore(session_set_name, current_time, '+inf', start=0, num=1)
+    members = redis_client.zrangebyscore(session_set_name, current_time, '+inf')
+
+    # Debugging: Log retrieved members
+    print(f"Members object: {members}")
+    print(f"Members retrieved: {[member.decode('utf-8') for member in members]}")
     
     for member in members:
         member_str = member.decode('utf-8')
         if member_str.startswith('token:'):
-            return member_str.split(":", 1)[1]
-    return None
+            token = member_str.split(":", 1)[1]
+            print(f"Valid token found: {token}")
+            return token
+
+    # If no valid token is found, generate a new one
+    print("No valid token found, generating a new one.")
+    token = str(uuid.uuid4())
+    insert_qr_token(session_id, token, app.config['TOKEN_EXPIRATION'])
+    return token
 
 def remove_expired_members(session_id):
     """

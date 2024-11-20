@@ -4,59 +4,40 @@ setInterval(function() {
     window.location.reload();
 }, 180000);
 
+let timeLeft = remainingTime || 0; // Fallback to 0 if remainingTime is null or undefined
+
+// Function to start and manage the countdown timer
 function startGlobalCountdown() {
-    let serverExpiration = tokenExpiration;
-    const storedExpiration = localStorage.getItem('tokenExpiration');
-    const currentTime = Date.now() / 1000;
+    const countdownElement = document.getElementById("countdown-timer");
 
-    let timeLeft;
-
-    if (storedExpiration !== String(serverExpiration)) {
-        timeLeft = serverExpiration - currentTime;
-        timeLeft = timeLeft > 0 ? Math.floor(timeLeft) : 0;
-        localStorage.setItem('tokenExpiration', serverExpiration);
-        localStorage.setItem('timeLeft', timeLeft);
-    } else {
-        timeLeft = localStorage.getItem('timeLeft') ? parseInt(localStorage.getItem('timeLeft')) : serverExpiration - currentTime;
-        timeLeft = timeLeft > 0 ? Math.floor(timeLeft) : 0;
-    }
-
-    localStorage.setItem('timeLeft', timeLeft);
-
+    // Function to update the countdown every second
     function updateCountdown() {
-        const countdownElement = document.getElementById("countdown-timer");
-        if (!countdownElement) return;
-
-        const currentTime = Date.now() / 1000;
-        timeLeft = Math.floor(serverExpiration - currentTime);
-
-        if (timeLeft < 0) {
-            timeLeft = 0;
+        if (!countdownElement) {
+            console.error("Countdown timer element not found!");
+            return;
         }
 
+        // If time is up, display expiration message
+        if (timeLeft <= 0) {
+            countdownElement.innerHTML = "Token has expired!";
+            clearInterval(interval); // Stop the countdown
+            return;
+        }
+
+        // Calculate minutes and seconds
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
 
-        countdownElement.innerHTML = `New QR Code in: ${minutes}m ${seconds}s`;
+        // Update the DOM with the remaining time
+        countdownElement.innerHTML = `Token expires in: ${minutes}m ${seconds}s`;
 
-        if (timeLeft <= 0) {
-            clearInterval(interval);
-            countdownElement.innerHTML = "Generating new QR code...";
-            localStorage.removeItem('timeLeft');
-            localStorage.removeItem('tokenExpiration');
-        } else {
-            timeLeft--;
-            localStorage.setItem('timeLeft', timeLeft);
-        }
+        // Decrease the remaining time by 1 second
+        timeLeft -= 1;
     }
 
+    // Start the countdown immediately and update every second
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
-
-    setInterval(() => {
-        clearInterval(interval);
-        startGlobalCountdown();
-    }, 60000);
 }
 
 function copyQrCode(url) {

@@ -23,56 +23,56 @@ app.config['TOKEN_EXPIRATION'] = timedelta(minutes=30)
 
 socketio = SocketIO(app, logger=False, engineio_logger=False)
 
-def generate_token():
-    """
-    Generate a new QR token, store it in Redis, and emit it to clients.
-    """
-    session_id = session.get('session_id')
-    if not session_id and session['logged_in']:
-        print("[DEBUG] Missing session_id, generating a new one.")
-        session_id = str(uuid.uuid4())
-        session['session_id'] = session_id
 
-    token = str(uuid.uuid4())
-    insert_qr_token(session_id, token, app.config['TOKEN_EXPIRATION'])
-
-    socketio.emit('new_token', {'token': token})
-    return token
 
 @app.route('/')
 def index():
     redis_status = test_connection()
     session_id = session.get('session_id')
+    print(f"Session ID after /callback: {session_id}")
     logged_in = session.get('logged_in', False)
-    current_token, expiration_timestamp = None, None
+    current_token = None
     token_info = session.get('token_info')
+    remaining_ttl = None
 
     session['logged_in'] = bool(token_info)
-
+    print(f"logged_in: {session['logged_in']}")
+    
     if session['logged_in']:
-
         current_token = get_valid_token(session_id)
+        print(f"current_token is: {current_token}")
+        # Get the remaining TTL for the current token
+        remaining_ttl = redis_client.ttl(f"session_{session_id}")
+        print(f"TTL for current token: {remaining_ttl} seconds")
 
-        if current_token:
-            expiration_time = redis_client.ttl(f"qr_token:{current_token}")
-            expiration_timestamp = datetime.now() + timedelta(seconds=expiration_time)
+        if remaining_ttl > 0:  # Ensure valid TTL
+            # Calculate expiration timestamp
+            expiration_timestamp = (datetime.now() + timedelta(seconds=remaining_ttl)).timestamp()
+        elif remaining_ttl == -1:
+            # Key exists but has no expiration
+            print("Current token exists but has no TTL.")
+            expiration_timestamp = None
         else:
-            current_token = generate_token()
-            expiration_timestamp = datetime.now() + app.config['TOKEN_EXPIRATION']
-        
+            # Key does not exist or TTL is invalid
+            print("Current token has expired or key is missing.")
+            expiration_timestamp = None
+
+    else:
+        # Handle when the user is not logged in
+        current_token = None
+        expiration_timestamp = None
+    
     return render_template(
-        'index.html',
-        logged_in=logged_in,
-        current_token=current_token,
-        token_expiration=expiration_timestamp,
-        redis_status=redis_status
-    )
+    'index.html',
+    logged_in=logged_in,
+    current_token=current_token,
+    remaining_ttl=remaining_ttl if remaining_ttl and remaining_ttl > 0 else 0,
+    redis_status=redis_status
+)
 
 @app.route('/generate_qr')
 def generate_qr():
     token = get_valid_token(session.get('session_id'))
-    if not token:
-        token = generate_token()
 
     data = f"http://127.0.0.1:5002/scan_qr?token={token}"
     qr = qrcode.QRCode(
@@ -178,11 +178,9 @@ def queue_song():
 
 @app.route('/login')
 def login():
-    session_id = session.get('session_id')
+    session_id = str(uuid.uuid4())
+    session['session_id'] = session_id
     print(f"\n(logged in) Session ID: {session_id}\n")
-    if not session_id:
-        session_id = str(uuid.uuid4())
-        session['session_id'] = session_id
     session['logged_in'] = True
     session.permanent = False
     auth_url = sp_oauth.get_authorize_url()

@@ -6,7 +6,7 @@
   
   <!-- Embed the token expiration timestamp into a JavaScript variable -->
   <script>
-    const tokenExpiration = {{ token_expiration if token_expiration else 'null' }};
+    const remainingTime = {{ remaining_ttl | default('null') | tojson }};
   </script>
   
   <!-- Include SocketIO client library -->
@@ -58,12 +58,19 @@
       {% if logged_in %}
       <p class="text-2xl font-semibold text-white mb-8">Scan the QR Code Below to get Started! 🎶</p>
       <div class="flex flex-col items-center">
-          <img src="{{ url_for('generate_qr', token=current_token) }}"
-          alt="QR Code" 
-          class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform"
-          onclick="copyQrCode('{{ url_for('scan_qr', token=current_token, _external=True) }}')">
-          <p id="countdown-timer"></p>
-      </div>
+        <img src="{{ url_for('generate_qr', token=current_token) }}"
+            alt="QR Code"
+            class="w-56 h-56 mb-6 shadow-lg rounded-md hover:scale-105 transition-transform"
+            onclick="copyQrCode('{{ url_for('scan_qr', token=current_token, _external=True) }}')">
+        <!-- Countdown Timer -->
+        <p id="countdown-timer" class="text-xl text-white mt-4">
+            {% if remaining_ttl and remaining_ttl > 0 %}
+                Token expires in {{ remaining_ttl // 60 }}m {{ remaining_ttl % 60 }}s
+            {% else %}
+                Token has expired!
+            {% endif %}
+        </p>
+    </div>
       {% else %}
       <p class="text-2xl font-semibold text-white mb-8">Please log in to begin</p>
       <div class="flex flex-col items-center">
