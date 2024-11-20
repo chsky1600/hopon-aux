@@ -65,9 +65,9 @@
         <!-- Countdown Timer -->
         <p id="countdown-timer" class="text-xl text-white mt-4">
             {% if remaining_ttl and remaining_ttl > 0 %}
-                Token expires in {{ remaining_ttl // 60 }}m {{ remaining_ttl % 60 }}s
+                QR code expires in {{ remaining_ttl // 60 }}m {{ remaining_ttl % 60 }}s
             {% else %}
-                Token has expired!
+                QR code has expired!
             {% endif %}
         </p>
     </div>

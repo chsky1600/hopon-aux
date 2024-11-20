@@ -1,4 +1,4 @@
-from flask import render_template, url_for, send_file, request, redirect, flash, session
+from flask import render_template, url_for, send_file, request, redirect, flash, session, get_flashed_messages
 import qrcode, redis, io, uuid, spotipy, os
 from spotipy.oauth2 import SpotifyClientCredentials
 from app import app, sp_oauth, get_spotify_client, get_active_device
@@ -113,6 +113,8 @@ def input_name():
         session.clear()
         flash('Session has expired. Please scan the QR code again.')
         return redirect(url_for('index'))
+    
+    # get_flashed_messages()
 
     if request.method == 'POST':
         name = request.form.get('name')
@@ -170,9 +172,13 @@ def queue_song():
             sp_host.add_to_queue(track_uri, device_id=active_device)
             flash('Song added to the queue!')
         except spotipy.exceptions.SpotifyException as e:
-            flash(f'Error adding song to queue: {e}')
+            error_message = str(e)
+            if "No active device found" in error_message:
+                flash("Awkward... seems like nothing's playing right now. Go tell your host to put something on!", 'error')  
+            else:
+                flash(f'Error adding song to queue: {e}', 'error')
     else:
-        flash('No track URI provided.')
+        flash('No track URI provided.', 'error')
 
     return redirect(url_for('add_song', song_query=song_query))
 
@@ -195,7 +201,6 @@ def logout():
 
     session.clear()
     session['logged_in'] = False
-    flash('You have been logged out.')
     return redirect(url_for('index'))
 
 @app.route('/callback')
