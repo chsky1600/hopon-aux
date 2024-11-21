@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='src/css/main.css') }}">
 </head>
-<body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden overflow-y-auto">
+<body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
   <!-- Floating Notes Container -->
   <div class="floating-notes absolute inset-0 pointer-events-none">
@@ -18,21 +18,23 @@
   </div>
 
   <!-- Main Content Container -->
-  <div class="text-center bg-purple bg-opacity-90 p-8 rounded-lg shadow-2xl max-w-md w-full backdrop-blur-lg overflow-y-auto qr-container">
-    <h1 class="text-4xl font-extrabold text-white uppercase glow-text mb-8">Enter Your Name</h1>
+  <div class="text-center bg-purple bg-opacity-90 p-6 sm:p-8 rounded-lg shadow-2xl max-w-xs sm:max-w-md w-full backdrop-blur-lg">
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-white uppercase glow-text mb-6 sm:mb-8">
+      Enter Your Name
+    </h1>
 
     <!-- Input Form -->
-    <form action="{{ url_for('input_name') }}" method="POST" class="flex flex-col justify-center items-center mt-4 w-full">
+    <form action="{{ url_for('input_name') }}" method="POST" class="flex flex-col gap-4 justify-center items-center w-full">
       <input 
         type="text" 
         name="name" 
         placeholder="Your Name" 
         required
-        class="flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring"
+        class="w-full px-4 py-2 border border-gray-300 rounded-md text-base sm:text-lg focus:outline-none focus:ring focus:ring-purple-400"
       >
       <button 
         type="submit" 
-        class="mt-4 px-6 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600"
+        class="w-full sm:w-auto px-6 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600 transition duration-200"
       >
         Submit
       </button>

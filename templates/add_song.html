@@ -5,8 +5,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/styles.css') }}">
   <!-- Include main.css for custom styles like glow effect and floating notes -->
   <link rel="stylesheet" href="{{ url_for('static', filename='src/css/main.css') }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden overflow-y-auto">
+<body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden overflow-hidden px-4 sm:px-0">
+  <!-- Added `px-4` here to ensure consistent padding for mobile -->
 
   <!-- Floating Notes Container -->
   <div class="floating-notes absolute inset-0 pointer-events-none">
@@ -17,32 +19,32 @@
   </div>
 
   <!-- Main Content Container -->
-  <div class="text-center bg-purple bg-opacity-90 p-8 rounded-lg shadow-2xl max-w-4xl w-full backdrop-blur-lg overflow-y-auto">
-    <h1 class="text-4xl font-extrabold text-white uppercase glow-text mb-8">Add a Song to the Queue</h1>
+  <div class="text-center bg-purple bg-opacity-90 p-6 sm:p-8 rounded-lg shadow-2xl max-w-4xl w-full backdrop-blur-lg overflow-y-auto">
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-white uppercase glow-text mb-6 sm:mb-8">Add a Song to the Queue</h1>
 
     <!-- Search Form -->
-    <form method="POST" class="flex justify-center items-center mt-4 w-full">
+    <form method="POST" class="flex flex-col gap-4 sm:flex-row justify-center items-center mt-4 w-full">
       <input 
         type="text" 
         name="song_query" 
         placeholder="Search for a song" 
         required
-        class="flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring"
+        class="flex-grow px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring text-base sm:text-lg w-full"
       >
       <button 
         type="submit" 
-        class="ml-4 px-6 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600"
+        class="px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600 transition duration-200 w-full sm:w-auto"
       >
         Search
       </button>
     </form>
 
     <!-- Display Flashed Messages -->
-    {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="mt-6">
-          {% for message in messages %}
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-md mt-4" role="alert">
+        <div class="mt-4">
+          {% for category, message in messages %}
+            <div class="px-4 py-3 rounded relative {{ 'bg-red-100 border border-red-400 text-red-700' if category == 'error' else 'bg-green-100 border border-green-400 text-green-700' }}" role="alert">
               <span class="block sm:inline">{{ message }}</span>
             </div>
           {% endfor %}
@@ -52,23 +54,26 @@
 
     <!-- Search Results -->
     {% if tracks %}
-    <div class="track-list mt-6 space-y-4">
-      <h3 class="text-2xl font-bold text-white mb-4">Search Results:</h3>
+    <div class="track-list mt-6 space-y-4 max-h-[50vh] overflow-y-auto">
+      <h3 class="text-xl sm:text-2xl font-bold text-white mb-4">Search Results:</h3>
       <ul class="w-full space-y-4">
         {% for track in tracks %}
-        <li class="flex items-center bg-white bg-opacity-20 p-4 rounded-lg shadow-md">
+        <li class="flex flex-col sm:flex-row items-center gap-4 bg-white bg-opacity-20 p-4 rounded-lg shadow-md">
           <!-- Smaller Album Art -->
-          <img src="{{ track.album.images[0].url }}" alt="Album Art" class="w-12 h-12 rounded-md mr-4">
+          <img src="{{ track.album.images[0].url }}" alt="Album Art" class="w-16 h-16 sm:w-20 sm:h-20 rounded-md">
           <!-- Song and Artist Info -->
-          <div class="text-left flex-grow">
+          <div class="text-center sm:text-left flex-grow">
             <p class="text-lg font-semibold text-white">{{ track.name }}</p>
             <p class="text-sm text-gray-300">{{ track.artists[0].name }}</p>
           </div>
           <!-- Add to Queue Button -->
-          <form action="{{ url_for('queue_song') }}" method="POST">
+          <form action="{{ url_for('queue_song') }}" method="POST" class="w-full sm:w-auto">
             <input type="hidden" name="track_uri" value="{{ track.uri }}">
             <input type="hidden" name="song_query" value="{{ song_query }}">
-            <button type="submit" class="px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600">
+            <button 
+              type="submit" 
+              class="px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600 transition duration-200 w-full sm:w-auto"
+            >
               Add to Queue
             </button>
           </form>

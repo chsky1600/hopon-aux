@@ -19,12 +19,13 @@ app.secret_key = secrets.token_hex(16)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')
+app.config['TOKEN_EXPIRATION'] = timedelta(minutes=30)
 Session(app)
 
 # Spotify credentials and auth
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
 client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
-redirect_uri = 'https://hopon-1c8107845ac3.herokuapp.com/callback'  # Ensure this matches your Spotify app settings
+redirect_uri = 'http://127.0.0.1:5002/callback'  # Ensure this matches your Spotify app settings
 scope="user-modify-playback-state user-read-playback-state"
 
 sp_oauth = SpotifyOAuth(

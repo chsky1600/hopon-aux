@@ -1,67 +1,58 @@
-// index.js
-
 setInterval(function() {
     window.location.reload();
 }, 180000);
 
+let timeLeft = remainingTime || 0; // fallback to 0 if remainingTime is null or undefined
+
 function startGlobalCountdown() {
-    let serverExpiration = tokenExpiration;
-    const storedExpiration = localStorage.getItem('tokenExpiration');
-    const currentTime = Date.now() / 1000;
-
-    let timeLeft;
-
-    if (storedExpiration !== String(serverExpiration)) {
-        timeLeft = serverExpiration - currentTime;
-        timeLeft = timeLeft > 0 ? Math.floor(timeLeft) : 0;
-        localStorage.setItem('tokenExpiration', serverExpiration);
-        localStorage.setItem('timeLeft', timeLeft);
-    } else {
-        timeLeft = localStorage.getItem('timeLeft') ? parseInt(localStorage.getItem('timeLeft')) : serverExpiration - currentTime;
-        timeLeft = timeLeft > 0 ? Math.floor(timeLeft) : 0;
-    }
-
-    localStorage.setItem('timeLeft', timeLeft);
+    const countdownElement = document.getElementById("countdown-timer");
 
     function updateCountdown() {
-        const countdownElement = document.getElementById("countdown-timer");
-        if (!countdownElement) return;
+        if (!countdownElement) {
+            console.error("Countdown timer element not found!");
+            return;
+        }
 
-        const currentTime = Date.now() / 1000;
-        timeLeft = Math.floor(serverExpiration - currentTime);
-
-        if (timeLeft < 0) {
-            timeLeft = 0;
+        // if time is up display expiration message
+        if (timeLeft <= 0) {
+            countdownElement.innerHTML = "QR code has expired!";
+            clearInterval(interval); // Stop the countdown
+            return;
         }
 
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
 
-        countdownElement.innerHTML = `New QR Code in: ${minutes}m ${seconds}s`;
+        // update DOM with remaining time
+        countdownElement.innerHTML = `Expires in: ${minutes}m ${seconds}s`;
 
-        if (timeLeft <= 0) {
-            clearInterval(interval);
-            countdownElement.innerHTML = "Generating new QR code...";
-            localStorage.removeItem('timeLeft');
-            localStorage.removeItem('tokenExpiration');
-        } else {
-            timeLeft--;
-            localStorage.setItem('timeLeft', timeLeft);
-        }
+        // decrease the remaining time by 1 sec
+        timeLeft -= 1;
     }
 
+    // start the countdown immediately and update every sec
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
+}
 
-    setInterval(() => {
-        clearInterval(interval);
-        startGlobalCountdown();
-    }, 60000);
+function fetchTTLAndUpdateTimer() {
+    console.log('Fetching TTL...');
+    fetch('/get_ttl')
+        .then(response => response.json())
+        .then(data => {
+            console.log('\nTTL Data:', data.ttl, '\n');
+            if (data.ttl) {
+                localStorage.setItem('timeLeft', data.ttl);
+                window.location.reload();
+            }
+        })
+        .catch(error => console.error('Error fetching TTL:', error));
 }
 
 function copyQrCode(url) {
     navigator.clipboard.writeText(url).then(function() {
         alert('Link copied to clipboard!');
+        fetchTTLAndUpdateTimer();
     }, function(err) {
         console.error('Could not copy text: ', err);
     });

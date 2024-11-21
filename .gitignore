@@ -6,3 +6,4 @@ flask_session/
 .spotifycache
 app/__pycache__/
 db/__pycache__/
+.vscode/
