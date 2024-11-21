@@ -11,9 +11,21 @@ body {
                  0px 0px 30px rgba(146, 144, 195, 0.2);
 }
 
-.qr-container {
-    animation: pulse-shadow 2s infinite;
-}
+/* Glowing Effect for Main Container */
+.glow-container {
+    box-shadow: 0 0 20px rgba(146, 144, 195, 0.5), 
+                0 0 30px rgba(146, 144, 195, 0.3), 
+                0 0 40px rgba(146, 144, 195, 0.2);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+  
+  /* On Hover, Increase Glow Subtly */
+.glow-container:hover {
+    box-shadow: 0 0 30px rgba(146, 144, 195, 0.6), 
+                0 0 50px rgba(146, 144, 195, 0.4), 
+                0 0 60px rgba(146, 144, 195, 0.3);
+    transform: scale(1.02);
+  }
 
 /* Keyframes for pulsing shadow */
 @keyframes pulse-shadow {
