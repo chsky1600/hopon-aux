@@ -27,14 +27,28 @@
 </head>
 <body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
-  <!-- Logout Button -->
-  {% if logged_in %}
-  <div class="absolute top-4 right-4">
-    <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600">
+
+  <div class="absolute top-4 right-4 flex space-x-4">
+    <!-- Report a Bug Button -->
+    <a href="mailto:dev@hopon-aux.com?subject=Bug%20Report"
+       class="flex items-center px-4 py-2 bg-transparent text-white border border-softPurple rounded-full hover:bg-softPurple hover:text-white hover:scale-105 transition transform duration-200 shadow-md">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Report a Bug
+    </a>
+    
+    <!-- Logout Button -->
+    {% if logged_in %}
+    <a href="{{ url_for('logout') }}"
+       class="flex items-center px-4 py-2 bg-transparent text-white border border-softPurple rounded-full hover:bg-softPurple hover:text-white hover:scale-105 transition transform duration-200 shadow-md">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m0 0l3-3m-3 3l3 3m6-9v6m0 0v6" />
+      </svg>
       Logout
     </a>
+    {% endif %}
   </div>
-  {% endif %}
 
   <header class="w-full text-center mb-12 px-4">
     {% if logged_in %}
