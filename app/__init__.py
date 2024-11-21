@@ -1,6 +1,6 @@
 # app/__init__.py
 
-from flask import Flask
+from flask import Flask, redirect, request
 from flask_session import Session
 from dotenv import load_dotenv
 import os
@@ -13,7 +13,12 @@ load_dotenv()
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 
-#TODO: session config token to be server-side in prod 
+@app.before_request
+def redirect_to_custom_domain():
+    if request.host not in ["hopon-aux.com", "www.hopon-aux.com"]:
+        return redirect(f"https://hopon-aux.com{request.path}", code=301)
+
+
 app.secret_key = secrets.token_hex(16)
 
 app.config['SESSION_TYPE'] = 'filesystem'
