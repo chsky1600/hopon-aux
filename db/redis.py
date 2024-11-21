@@ -4,9 +4,7 @@ import os
 from app import app
 import uuid
 
-
-redis_url = os.getenv('REDIS_URL')
-redis_client = redis.from_url(redis_url)
+redis_client = redis.StrictRedis.from_url(os.environ['REDIS_URL'])
 
 def test_connection():
     try:
