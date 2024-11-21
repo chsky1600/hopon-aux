@@ -74,7 +74,7 @@ def get_ttl():
 def end_session():
     session_id = session.get('session_id')
     if session_id:
-        delete_session_set(session_id)  # Call the delete_session_set function
+        delete_session_set(session_id)  
         session.clear()
         return jsonify({'message': 'Session ended successfully'}), 200
     return jsonify({'error': 'Session ID not found'}), 404

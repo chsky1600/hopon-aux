@@ -73,7 +73,3 @@ function addScannerToList(name) {
 window.onload = function() {
     startGlobalCountdown();
 };
-
-window.addEventListener('beforeunload', function(event) {
-    navigator.sendBeacon('/end_session');
-});
