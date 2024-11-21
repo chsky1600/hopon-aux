@@ -27,6 +27,7 @@
 </head>
 <body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
+  <p class="absolute top-4 left-4 text-gray-400">v1.2.0</p>
 
   <div class="absolute top-4 right-4 flex space-x-4">
     <!-- Report a Bug Button -->
@@ -74,6 +75,7 @@
   <div class="relative flex items-center justify-center w-full h-full">
 
     <!-- Main Content Container -->
+    <!-- Main Content Container -->
     <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[42rem] backdrop-blur-lg qr-container">
       {% if logged_in %}
       <p class="text-2xl font-semibold text-white mb-8">Scan or Click the QR Code Below to get Started! 🎶</p>
@@ -84,22 +86,27 @@
             onclick="copyQrCode('{{ url_for('scan_qr', token=current_token, _external=True) }}')">
         <!-- Countdown Timer -->
         <p id="countdown-timer" class="text-xl text-white mt-4">
-            {% if remaining_ttl and remaining_ttl > 0 %}
-                Expires in {{ remaining_ttl // 60 }}m {{ remaining_ttl % 60 }}s
-            {% else %}
-                QR code has expired!
-            {% endif %}
+          {% if remaining_ttl and remaining_ttl > 0 %}
+              Expires in {{ remaining_ttl // 60 }}m {{ remaining_ttl % 60 }}s
+          {% else %}
+              QR code has expired!
+          {% endif %}
         </p>
-    </div>
-      {% else %}
-      <p class="text-2xl font-semibold text-white mb-8">Please log in to begin</p>
-      <div class="flex flex-col items-center">
-          <a href="{{ url_for('login') }}" class="mt-4 px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600">
-              Login with Spotify
-          </a>
       </div>
-      {% endif %}
-    </div>
+      {% else %}
+        <h2 class="text-4xl font-extrabold text-white mb-6 glow-text">Join the Party!</h2>
+        <p class="text-lg text-gray-200 mb-6 leading-relaxed">
+          Login to start adding songs, collaborating with friends, and creating the perfect queue. 
+          <span class="text-gradient"> Collaborate. Queue. Vibe. 🎵</span>
+        </p>
+        <div class="flex flex-col items-center">
+          <a href="{{ url_for('login') }}" class="login-button">
+            Login with Spotify
+          </a>
+        </div>
+        {% endif %}
+      </div>
+  </div>
 
     {% if logged_in %}
     <!-- Floating Active Scanners -->
@@ -136,13 +143,14 @@
 
   </div>
 
-  {# <h1>Redis Connection Status</h1>
-  <p>{{ redis_status }}</p> #}
+  
     
-  <!-- Footer -->
-  <footer class="absolute bottom-4 text-center w-full text-white">
-    <p>Made with <span class="text-red-500">&hearts;</span> by <a href="https://github.com/chsky1600" class="text-blue-500 underline">1600</a> and <a href="https://github.com/trisslazaj" class="text-blue-500 underline">Tani</a></p>
-  </footer>
+  
 
 </body>
+<!-- Footer -->
+<footer class="absolute bottom-4 text-center w-full text-white">
+  <p>Made with <span class="text-red-500">&hearts;</span> by <a href="https://github.com/chsky1600" class="text-blue-500 underline">1600</a> and <a href="https://github.com/trisslazaj" class="text-blue-500 underline">Tani</a></p>
+</footer>
+
 </html>
