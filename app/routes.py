@@ -157,7 +157,7 @@ def add_song():
     if song_query:
         client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
         sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
-        results = sp.search(q=song_query, type='track', limit=10)
+        results = sp.search(q=song_query, type='track', limit=20)
         tracks = results['tracks']['items']
     elif request.method == 'POST' and not song_query:
         flash('Please enter a song query')
