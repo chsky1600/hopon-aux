@@ -27,22 +27,37 @@
 </head>
 <body class="bg-gradient-to-br from-darkBlue via-purple to-lightPurple text-softPurple font-sans min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
-  <!-- Logout Button -->
-  {% if logged_in %}
-  <div class="absolute top-4 right-4">
-    <a href="{{ url_for('logout') }}" class="px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600">
+  <p class="absolute top-4 left-4 text-gray-400 text-sm sm:text-base">v1.2.0</p>
+
+  <div class="absolute top-4 right-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+    <!-- Report a Bug Button -->
+    <a href="mailto:dev@hopon-aux.com?subject=Bug%20Report"
+       class="flex items-center px-5 py-3 sm:px-4 sm:py-2 bg-transparent text-white border border-softPurple rounded-full hover:bg-softPurple hover:text-white hover:scale-105 transition transform duration-200 shadow-md text-base sm:text-base">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 mr-2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Report a Bug
+    </a>
+
+    <!-- Logout Button -->
+    {% if logged_in %}
+    <a href="{{ url_for('logout') }}"
+       class="flex items-center px-5 py-3 sm:px-4 sm:py-2 bg-transparent text-white border border-softPurple rounded-full hover:bg-softPurple hover:text-white hover:scale-105 transition transform duration-200 shadow-md text-base sm:text-base">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 mr-2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m0 0l3-3m-3 3l3 3m6-9v6m0 0v6" />
+      </svg>
       Logout
     </a>
+    {% endif %}
   </div>
-  {% endif %}
 
-  <header class="w-full text-center mb-12 px-4">
+  <header class="w-full text-center mb-8 sm:mb-12 px-4">
     {% if logged_in %}
-      <h1 class="text-8xl font-extrabold text-white uppercase glow-text">
+      <h1 class="text-6xl sm:text-8xl font-extrabold text-white uppercase glow-text">
         Hopon {{ user_name }}'s Aux!
       </h1>
     {% else %}
-      <h1 class="text-8xl font-extrabold text-white uppercase glow-text">
+      <h1 class="text-6xl sm:text-8xl font-extrabold text-white uppercase glow-text">
         Welcome to Hopon!
       </h1>
     {% endif %}
@@ -56,41 +71,47 @@
     <span class="note-animation text-4xl text-softPurple absolute bottom-32 right-20">🎵</span>
   </div>
 
-  <!-- Main Content and Active Scanners Container -->
-  <div class="relative flex items-center justify-center w-full h-full">
-
-    <!-- Main Content Container -->
-    <div class="text-center bg-purple bg-opacity-90 p-12 rounded-lg shadow-2xl w-[42rem] backdrop-blur-lg qr-container">
-      {% if logged_in %}
-      <p class="text-2xl font-semibold text-white mb-8">Scan or Click the QR Code Below to get Started! 🎶</p>
-      <div class="flex flex-col items-center">
-        <img src="{{ url_for('generate_qr', token=current_token) }}"
+  <!-- Main Content Container -->
+<div class="text-center bg-purple bg-opacity-90 p-10 rounded-lg shadow-2xl w-full sm:w-[42rem] backdrop-blur-lg qr-container glow-container">
+  {% if logged_in %}
+  <p class="text-xl sm:text-2xl font-semibold text-white mb-6 sm:mb-8">
+    Scan or Click the QR Code Below to get Started! 🎶
+  </p>
+  <div class="flex flex-col items-center">
+    <img src="{{ url_for('generate_qr', token=current_token) }}"
             alt="QR Code"
             class="w-[15.75rem] h-[15.75rem] mb-3 shadow-lg rounded-md hover:scale-105 transition-transform"
             onclick="copyQrCode('{{ url_for('scan_qr', token=current_token, _external=True) }}')">
-        <!-- Countdown Timer -->
-        <p id="countdown-timer" class="text-xl text-white mt-4">
-            {% if remaining_ttl and remaining_ttl > 0 %}
-                Expires in {{ remaining_ttl // 60 }}m {{ remaining_ttl % 60 }}s
-            {% else %}
-                QR code has expired!
-            {% endif %}
-        </p>
-    </div>
+    <!-- Countdown Timer -->
+    <p id="countdown-timer" class="text-lg text-white mt-4">
+      {% if remaining_ttl and remaining_ttl > 0 %}
+          Expires in {{ remaining_ttl // 60 }}m {{ remaining_ttl % 60 }}s
       {% else %}
-      <p class="text-2xl font-semibold text-white mb-8">Please log in to begin</p>
-      <div class="flex flex-col items-center">
-          <a href="{{ url_for('login') }}" class="mt-4 px-4 py-2 bg-softPurple text-white rounded-md hover:bg-softPurple-600">
-              Login with Spotify
-          </a>
-      </div>
+          QR code has expired!
       {% endif %}
-    </div>
+    </p>
+  </div>
+  {% else %}
+  <h2 class="text-5xl font-extrabold text-white mb-6 glow-text sm:text-4xl">
+    Join the Party!
+  </h2>
+  <p class="text-lg text-gray-200 mb-6 leading-relaxed sm:text-base">
+    Log in to start queueing songs, collaborating with friends, and creating the perfect playlist. 
+    <span class="text-gradient"> Collaborate. Queue. Vibe. 🎵</span>
+  </p>
+  <div class="flex flex-col items-center">
+    <a href="{{ url_for('login') }}" 
+       class="login-button text-xl py-4 px-8 sm:text-base sm:py-3 sm:px-6">
+      Login with Spotify
+    </a>
+  </div>
+  {% endif %}
+</div>
 
-    {% if logged_in %}
-    <!-- Floating Active Scanners -->
-    <div class="absolute inset-0 pointer-events-none">
-      {% set positions = [
+  {% if logged_in %}
+  <!-- Floating Active Scanners -->
+  <div class="absolute inset-0 pointer-events-none">
+    {% set positions = [
       {'top': '10%', 'left': '10%'},
       {'top': '15%', 'right': '10%'},
       {'bottom': '15%', 'left': '15%'},
@@ -101,34 +122,30 @@
       {'bottom': '40%', 'right': '15%'},
       {'top': '15%', 'left': '20%'},
       {'bottom': '10%', 'right': '20%'},
-      ] %}
-      {% set durations = ['7s', '9s', '8s', '10s', '6s', '11s', '9s', '8s'] %}
-      {% set delays = ['0s', '1s', '2s', '3s', '0.5s', '1.5s', '2.5s', '3.5s'] %}
-      {% for scanner in active_scanners %}
-      {% set pos = positions[loop.index0 % positions|length] %}
-      <div class="text-white text-3xl font-semibold glow-text animate-scanner absolute" style="
-      {% if pos.top %} top: {{ pos.top }}; {% endif %}
-      {% if pos.bottom %} bottom: {{ pos.bottom }}; {% endif %}
-      {% if pos.left %} left: {{ pos.left }}; {% endif %}
-      {% if pos.right %} right: {{ pos.right }}; {% endif %}
-      animation-duration: {{ durations[loop.index0 % durations|length] }};
-      animation-delay: {{ delays[loop.index0 % delays|length] }};
-      ">
-      {{ scanner }}
-      </div>
-      {% endfor %}
+    ] %}
+    {% set durations = ['7s', '9s', '8s', '10s', '6s', '11s', '9s', '8s'] %}
+    {% set delays = ['0s', '1s', '2s', '3s', '0.5s', '1.5s', '2.5s', '3.5s'] %}
+    {% for scanner in active_scanners %}
+    {% set pos = positions[loop.index0 % positions|length] %}
+    <div class="text-white text-2xl sm:text-3xl font-semibold glow-text animate-scanner absolute" style="
+    {% if pos.top %} top: {{ pos.top }}; {% endif %}
+    {% if pos.bottom %} bottom: {{ pos.bottom }}; {% endif %}
+    {% if pos.left %} left: {{ pos.left }}; {% endif %}
+    {% if pos.right %} right: {{ pos.right }}; {% endif %}
+    animation-duration: {{ durations[loop.index0 % durations|length] }};
+    animation-delay: {{ delays[loop.index0 % delays|length] }};
+    ">
+    {{ scanner }}
     </div>
-    {% endif %}
-
+    {% endfor %}
   </div>
-
-  {# <h1>Redis Connection Status</h1>
-  <p>{{ redis_status }}</p> #}
-    
-  <!-- Footer -->
-  <footer class="absolute bottom-4 text-center w-full text-white">
-    <p>Made with <span class="text-red-500">&hearts;</span> by <a href="https://github.com/chsky1600" class="text-blue-500 underline">1600</a> and <a href="https://github.com/trisslazaj" class="text-blue-500 underline">Tani</a></p>
-  </footer>
+  {% endif %}
 
 </body>
+
+<!-- Footer -->
+<footer class="absolute bottom-4 text-center w-full text-white">
+  <p>Made with <span class="text-red-500">&hearts;</span> by <a href="https://github.com/chsky1600" class="text-blue-500 underline">1600</a> and <a href="https://github.com/trisslazaj" class="text-blue-500 underline">Tani</a></p>
+</footer>
+
 </html>
