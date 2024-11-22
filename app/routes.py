@@ -2,13 +2,11 @@ from flask import render_template, url_for, send_file, request, redirect, flash,
 import qrcode, redis, io, uuid, spotipy, os
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
-from app import app, sp_oauth, get_spotify_client, get_active_device, socketio
+from app import app, sp_oauth, get_spotify_client, get_active_device, emit_event
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, emit
 from db.redis import (
-    test_connection,
-    insert_qr_token,
     get_valid_token,
     delete_session_set,
     get_active_scanners,
@@ -222,7 +220,7 @@ def queue_song():
     if not is_host:
         try:
             # Emit a song request event via Socket.IO
-            socketio.emit('song_request', {'track_uri': track_uri, 'scanner_id': session_id}, broadcast=True)
+            emit_event('song_request', {'track_uri': track_uri, 'scanner_id': session_id}, broadcast=True)
             flash('Song request sent to the host!')
         except Exception as e:
             flash(f'Error while sending song request: {str(e)}', 'error')

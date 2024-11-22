@@ -2,6 +2,7 @@
 
 from flask import Flask
 from flask_session import Session
+from flask_socketio import SocketIO
 from dotenv import load_dotenv
 import os
 import spotipy
@@ -12,7 +13,10 @@ from datetime import timedelta
 load_dotenv()
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
+socketio = SocketIO(app)
 
+def emit_event(event, data, broadcast=False):
+    socketio.emit(event, data, broadcast=broadcast)
 
 app.secret_key = secrets.token_hex(16)
 
