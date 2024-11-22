@@ -150,25 +150,36 @@ def input_name():
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
-    # Validate session
+    # Validate session for scanners
     session_id = session.get('session_id')
     token = session.get('qr_token')
 
+    # Ensure session and token are valid
     if not session_id or not token:
         flash('Session is missing. Please scan the QR code again.')
         return redirect(url_for('index'))
 
-    # If valid, continue to add song logic
-    sp_host = get_spotify_client()
-    if not sp_host:
-        flash('Host is not authenticated with Spotify.')
+    if get_valid_token(session_id) != token:
+        session.clear()
+        flash('Session has expired. Please scan the QR code again.')
         return redirect(url_for('index'))
 
-    # Handle song search
+    # Check if the user is the host or a scanner
+    is_host = session.get('logged_in', False)
+
+    # Host logic (requires Spotify client)
+    if is_host:
+        sp_host = get_spotify_client()
+        if not sp_host:
+            flash('Host is not authenticated with Spotify.')
+            return redirect(url_for('index'))
+
+    # Song search logic (applies to both host and scanners)
     song_query = request.form.get('song_query') or request.args.get('song_query')
     tracks = None
     if song_query:
         try:
+            # Use Spotify's Client Credentials for scanners
             client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
             sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
             results = sp.search(q=song_query, type='track', limit=20)
@@ -179,9 +190,7 @@ def add_song():
         flash('Please enter a song query.')
         return redirect(url_for('add_song'))
 
-    return render_template('add_song.html', tracks=tracks, song_query=song_query)
-
-    # render the add_song template with tracks
+    # Render the add_song template
     return render_template('add_song.html', tracks=tracks, song_query=song_query)
 
 @app.route('/queue_song', methods=['POST'])
