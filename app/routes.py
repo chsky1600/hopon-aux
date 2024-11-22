@@ -151,8 +151,8 @@ def input_name():
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
     # Validate session_id and token
-    session_id = request.args.get('session_id')
-    token = request.args.get('token')
+    session_id = session.get('session_id')
+    token = session.get('qr_token')
 
     if not session_id or not token:
         flash('Session is missing. Please scan the QR code again.')
