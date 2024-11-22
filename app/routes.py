@@ -150,7 +150,7 @@ def input_name():
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
-    # Validate session_id and token
+    # Validate session
     session_id = session.get('session_id')
     token = session.get('qr_token')
 
@@ -158,17 +158,13 @@ def add_song():
         flash('Session is missing. Please scan the QR code again.')
         return redirect(url_for('index'))
 
-    if get_valid_token(session_id) != token:
-        session.clear()
-        flash('Session has expired. Please scan the QR code again.')
-        return redirect(url_for('index'))
-
+    # If valid, continue to add song logic
     sp_host = get_spotify_client()
     if not sp_host:
         flash('Host is not authenticated with Spotify.')
         return redirect(url_for('index'))
 
-    # handle song search
+    # Handle song search
     song_query = request.form.get('song_query') or request.args.get('song_query')
     tracks = None
     if song_query:
@@ -182,6 +178,8 @@ def add_song():
     elif request.method == 'POST' and not song_query:
         flash('Please enter a song query.')
         return redirect(url_for('add_song'))
+
+    return render_template('add_song.html', tracks=tracks, song_query=song_query)
 
     # render the add_song template with tracks
     return render_template('add_song.html', tracks=tracks, song_query=song_query)
