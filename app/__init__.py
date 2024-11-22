@@ -1,8 +1,8 @@
 # app/__init__.py
 
-from flask import Flask
+from flask import Flask, session
 from flask_session import Session
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room, leave_room, emit, disconnect
 from dotenv import load_dotenv
 import os
 import spotipy
@@ -14,6 +14,16 @@ load_dotenv()
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 socketio = SocketIO(app)
+
+@socketio.on('connect')
+def on_connect():
+    # Get session_id for the scanner or host
+    session_id = session.get('session_id')
+
+    if session_id:
+        # Join a room named after the session_id
+        join_room(session_id)
+        print(f"Client joined room: {session_id}")
 
 def emit_event(event, data, broadcast=False):
     socketio.emit(event, data, broadcast=broadcast)
