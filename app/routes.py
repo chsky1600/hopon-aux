@@ -2,7 +2,7 @@ from flask import render_template, url_for, send_file, request, redirect, flash,
 import qrcode, redis, io, uuid, spotipy, os
 from spotipy import Spotify
 from spotipy.oauth2 import SpotifyClientCredentials
-from app import app, sp_oauth, get_spotify_client, get_active_device
+from app import app, sp_oauth, get_spotify_client, get_active_device, socketio
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, emit
