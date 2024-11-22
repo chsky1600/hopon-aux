@@ -25,8 +25,8 @@ def on_connect():
         join_room(session_id)
         print(f"Client joined room: {session_id}")
 
-def emit_event(event, data, broadcast=False):
-    socketio.emit(event, data, broadcast=broadcast)
+def emit_event(event, data):
+    socketio.emit(event, data)
 
 app.secret_key = secrets.token_hex(16)
 
