@@ -214,37 +214,15 @@ def queue_song():
         flash('No track URI provided.', 'error')
         return redirect(url_for('add_song', song_query=song_query))
 
-    # Check if this user is the host
-    is_host = session.get('logged_in', False)
-
-    if not is_host:
-        try:
-            # Emit a song request event via Socket.IO
-            emit_event('song_request', {'track_uri': track_uri, 'scanner_id': session_id})
-            flash('Song request sent to the host!')
-        except Exception as e:
-            flash(f'Error while sending song request: {str(e)}', 'error')
+    # The scanner emits a song request event to the host
+    try:
+        emit_event('song_request', {'track_uri': track_uri, 'scanner_id': session_id}, session_id=session_id)
+        flash('Song request sent to the host!')
+    except Exception as e:
+        flash(f'Error while sending song request: {str(e)}', 'error')
 
     # Redirect back to the song search page
     return redirect(url_for('add_song', song_query=song_query))
-
-@socketio.on('song_request')
-def handle_song_request(data):
-    track_uri = data.get('track_uri')
-    scanner_id = data.get('scanner_id')
-
-    sp_host = get_spotify_client()
-    if not sp_host:
-        # Notify scanners that the host is not authenticated
-        emit('song_request_error', {'message': 'Host is not authenticated with Spotify.'})
-        return
-
-    active_device = get_active_device(sp_host)
-    try:
-        sp_host.add_to_queue(track_uri, device_id=active_device)
-        emit('song_queued', {'track_uri': track_uri, 'scanner_id': scanner_id})
-    except spotipy.exceptions.SpotifyException as e:
-        emit('song_request_error', {'message': f'Error adding song to queue: {str(e)}'})
 
 @app.route('/login')
 def login():

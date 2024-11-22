@@ -15,6 +15,36 @@ load_dotenv()
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 socketio = SocketIO(app)
 
+@socketio.on('song_request')
+def handle_song_request(data):
+    session_id = data.get('scanner_id')
+    track_uri = data.get('track_uri')
+
+    if not session_id or not track_uri:
+        print("Invalid song request data.")
+        return
+
+    # Get the host's Spotify client
+    sp_host = get_spotify_client()
+    if not sp_host:
+        print("Host is not authenticated with Spotify.")
+        return
+
+    # Get the host's active device
+    active_device = get_active_device(sp_host)
+    if not active_device:
+        print("No active Spotify device found for the host.")
+        return
+
+    # Queue the song
+    try:
+        sp_host.add_to_queue(track_uri, device_id=active_device)
+        print(f"Song {track_uri} added to the queue by scanner {session_id}.")
+        # Notify the scanner that the song was added
+        socketio.emit('song_added', {'track_uri': track_uri}, to=session_id)
+    except Exception as e:
+        print(f"Error adding song to queue: {e}")
+
 @socketio.on('connect')
 def on_connect():
     # Get session_id for the scanner or host
