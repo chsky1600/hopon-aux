@@ -150,10 +150,15 @@ def input_name():
 
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
-    token = session.get('qr_token')
+    # Validate session_id and token
     session_id = session.get('session_id')
+    token = session.get('qr_token')
 
-    if not token or get_valid_token(session_id) != token:
+    if not session_id or not token:
+        flash('Session is missing. Please scan the QR code again.')
+        return redirect(url_for('index'))
+
+    if get_valid_token(session_id) != token:
         session.clear()
         flash('Session has expired. Please scan the QR code again.')
         return redirect(url_for('index'))
@@ -163,16 +168,22 @@ def add_song():
         flash('Host is not authenticated with Spotify.')
         return redirect(url_for('index'))
 
+    # handle song search
     song_query = request.form.get('song_query') or request.args.get('song_query')
     tracks = None
     if song_query:
-        client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
-        sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
-        results = sp.search(q=song_query, type='track', limit=20)
-        tracks = results['tracks']['items']
+        try:
+            client_credentials_manager = SpotifyClientCredentials(client_id=client_id, client_secret=client_secret)
+            sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+            results = sp.search(q=song_query, type='track', limit=20)
+            tracks = results['tracks']['items']
+        except Exception as e:
+            flash(f"Error while searching for songs: {str(e)}")
     elif request.method == 'POST' and not song_query:
-        flash('Please enter a song query')
+        flash('Please enter a song query.')
         return redirect(url_for('add_song'))
+
+    # render the add_song template with tracks
     return render_template('add_song.html', tracks=tracks, song_query=song_query)
 
 @app.route('/queue_song', methods=['POST'])
