@@ -142,7 +142,7 @@ def input_name():
             # Store active scanner name in Redis
             insert_active_scanner(session['session_id'], name)
             socketio.emit('new_scanner', {'name': name})
-            return redirect(url_for('add_song'))
+            return redirect(url_for('add_song', session_id=session['session_id'], token=session['qr_token']))
         else:
             flash('Name is required.')
 
@@ -151,8 +151,8 @@ def input_name():
 @app.route('/add_song', methods=['GET', 'POST'])
 def add_song():
     # Validate session_id and token
-    session_id = session.get('session_id')
-    token = session.get('qr_token')
+    session_id = request.args.get('session_id')
+    token = request.args.get('token')
 
     if not session_id or not token:
         flash('Session is missing. Please scan the QR code again.')
