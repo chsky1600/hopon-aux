@@ -81,9 +81,10 @@ def end_session():
 
 @app.route('/generate_qr')
 def generate_qr():
-    token = get_valid_token(session.get('session_id'))
+    session_id = session.get('session_id')
+    token = get_valid_token(session_id)
 
-    data = f"http://hopon-aux.com/scan_qr?token={token}"
+    data = f"http://hopon-aux.com/input_name?session_id={session_id}&token={token}"
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -115,26 +116,36 @@ def scan_qr():
 
 @app.route('/input_name', methods=['GET', 'POST'])
 def input_name():
-    token = session.get('qr_token')
-    session_id = session.get('session_id')
+    # Get session_id and token from query parameters
+    session_id = request.args.get('session_id')
+    token = request.args.get('token')
 
-    if not token or get_valid_token(session_id) != token:
+    # Validate token directly if no session exists
+    if not session.get('session_id'):
+        if not session_id or not token or get_valid_token(session_id) != token:
+            flash('Invalid or expired QR code. Please scan the code again.')
+            return redirect(url_for('index'))
+
+        # Initialize session for the scanner
+        session['session_id'] = session_id
+        session['qr_token'] = token
+
+    # Check session validity if session exists
+    elif session.get('qr_token') != get_valid_token(session.get('session_id')):
         session.clear()
         flash('Session has expired. Please scan the QR code again.')
         return redirect(url_for('index'))
-    
-    # get_flashed_messages()
 
     if request.method == 'POST':
         name = request.form.get('name')
         if name:
             # Store active scanner name in Redis
-            insert_active_scanner(session_id, name)
-            # redis_client.sadd("active_scanners", name)
+            insert_active_scanner(session['session_id'], name)
             socketio.emit('new_scanner', {'name': name})
             return redirect(url_for('add_song'))
         else:
             flash('Name is required.')
+
     return render_template('input_name.html')
 
 @app.route('/add_song', methods=['GET', 'POST'])
