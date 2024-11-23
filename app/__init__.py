@@ -17,6 +17,7 @@ socketio = SocketIO(app)
 
 @socketio.on('song_request')
 def handle_song_request(data):
+    print("DEBUG: handle_song_request triggered.")
     # Extract data
     session_id = data.get('scanner_id')
     track_uri = data.get('track_uri')
@@ -53,22 +54,20 @@ def handle_song_request(data):
 
 @socketio.on('connect')
 def on_connect():
-    # Get session_id for the scanner or host
     session_id = session.get('session_id')
+    print(f"DEBUG: on_connect called. session_id={session_id}")
 
     if session_id:
-        # Join a room named after the session_id
         join_room(session_id)
-        print(f"Client joined room: {session_id}")
+        print(f"DEBUG: Host joined room: {session_id}")
 
-def emit_event(event, data, room=None):
-    """
-    Emits an event with data to a specific room or broadcast if no room is specified.
-    """
-    if room:
-        socketio.emit(event, data, to=room)  # Use `to` for targeting a specific room
+def emit_event(event, data, session_id=None):
+    if session_id:
+        print(f"DEBUG: Emitting {event} to room {session_id} with data: {data}")
+        socketio.emit(event, data, to=session_id)
     else:
-        socketio.emit(event, data)  # Broadcast to all clients if no room is provided
+        print(f"DEBUG: Emitting {event} globally with data: {data}")
+        socketio.emit(event, data)
 
 app.secret_key = secrets.token_hex(16)
 
