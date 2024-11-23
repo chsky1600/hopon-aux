@@ -2,7 +2,7 @@
 
 from flask import Flask, session
 from flask_session import Session
-from flask_socketio import SocketIO, join_room, leave_room, emit, disconnect
+from flask_socketio import SocketIO, join_room
 from dotenv import load_dotenv
 import os
 import spotipy
@@ -55,8 +55,14 @@ def on_connect():
         join_room(session_id)
         print(f"Client joined room: {session_id}")
 
-def emit_event(event, data):
-    socketio.emit(event, data)
+def emit_event(event, data, room=None):
+    """
+    Emits an event with data to a specific room or broadcast if no room is specified.
+    """
+    if room:
+        socketio.emit(event, data, to=room)  # Use `to` for targeting a specific room
+    else:
+        socketio.emit(event, data)  # Broadcast to all clients if no room is provided
 
 app.secret_key = secrets.token_hex(16)
 

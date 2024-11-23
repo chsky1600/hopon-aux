@@ -216,7 +216,7 @@ def queue_song():
 
     # The scanner emits a song request event to the host
     try:
-        emit_event('song_request', {'track_uri': track_uri, 'scanner_id': session_id}, session_id=session_id)
+        emit_event('song_request', {'track_uri': track_uri, 'scanner_id': session_id}, room=session_id)
         flash('Song request sent to the host!')
     except Exception as e:
         flash(f'Error while sending song request: {str(e)}', 'error')
