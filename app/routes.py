@@ -199,11 +199,13 @@ def queue_song():
     # Validate session for both host and scanner
     if not session_id or not token:
         flash('Session is missing. Please scan the QR code again.')
+        print("DEBUG: Session is missing or token is invalid.")
         return redirect(url_for('index'))
 
     if get_valid_token(session_id) != token:
         session.clear()
         flash('Session has expired. Please scan the QR code again.')
+        print("DEBUG: Session token is invalid or expired.")
         return redirect(url_for('index'))
 
     # Get the track URI and song query
@@ -212,13 +214,16 @@ def queue_song():
 
     if not track_uri:
         flash('No track URI provided.', 'error')
+        print("DEBUG: No track URI provided in song request.")
         return redirect(url_for('add_song', song_query=song_query))
 
     # The scanner emits a song request event to the host
     try:
-        emit_event('song_request', {'track_uri': track_uri, 'scanner_id': session_id}, room=session_id)
+        print(f"DEBUG: Emitting song request. session_id={session_id}, track_uri={track_uri}")
+        emit_event('song_request', {'track_uri': track_uri, 'scanner_id': session_id})
         flash('Song request sent to the host!')
     except Exception as e:
+        print(f"DEBUG: Error while sending song request: {e}")
         flash(f'Error while sending song request: {str(e)}', 'error')
 
     # Redirect back to the song search page
