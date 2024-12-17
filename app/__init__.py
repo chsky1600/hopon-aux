@@ -80,7 +80,7 @@ Session(app)
 # Spotify credentials and auth
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
 client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
-redirect_uri = 'http://hopon-aux.com/callback'  # Ensure this matches your Spotify app settings
+redirect_uri = 'https://hopon-aux.com/callback'  # Ensure this matches your Spotify app settings
 scope="user-modify-playback-state user-read-playback-state"
 
 sp_oauth = SpotifyOAuth(
