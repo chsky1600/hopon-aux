@@ -172,7 +172,7 @@ def add_song():
             flash('Host is not authenticated with Spotify.')
             return redirect(url_for('index'))
 
-    # Song search logic (applies to both host and scanners)
+
     song_query = request.form.get('song_query') or request.args.get('song_query')
     tracks = None
     if song_query:

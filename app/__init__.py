@@ -15,7 +15,7 @@ load_dotenv()
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 socketio = SocketIO(app)
 
-@socketio.on('song_request')
+@socketio.on('song_request') 
 def handle_song_request(data):
     print("DEBUG: handle_song_request triggered.")
     # Extract data
@@ -61,7 +61,7 @@ def on_connect():
         join_room(session_id)
         print(f"DEBUG: Host joined room: {session_id}")
 
-def emit_event(event, data, session_id=None):
+def emit_event(event, data, session_id):
     if session_id:
         print(f"DEBUG: Emitting {event} to room {session_id} with data: {data}")
         socketio.emit(event, data, to=session_id)
