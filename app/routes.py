@@ -82,7 +82,7 @@ def generate_qr():
     session_id = session.get('session_id')
     token = get_valid_token(session_id)
 
-    data = f"http://hopon-aux.com/input_name?session_id={session_id}&token={token}"
+    data = f"https://hopon-aux.com/input_name?session_id={session_id}&token={token}"
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
